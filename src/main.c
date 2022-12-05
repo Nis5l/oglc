@@ -3,6 +3,8 @@
 #include "ecs/ecs.h"
 #include "ecs/components/transform.h"
 
+//glfw + glad/-glew-
+
 int main(int argc, char **argv) {
 	dprintf("initializing ecs\n");
 	entities_init();

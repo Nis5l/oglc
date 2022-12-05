@@ -76,7 +76,36 @@ int m3_mul(m3 *m1, const m3 *m2) {
 	return 0;
 }
 
-int m3_position(m3 *m, const v3 *v) {
+int m3_mul_scalar(m3 *m, f32 f) {
+	if(!m) {
+		eprintf("matrix is null\n");
+		return 1;
+	}
+
+	m->c0r0 *= f;
+	m->c0r1 *= f;
+	m->c0r2 *= f;
+
+	m->c1r0 *= f;
+	m->c1r1 *= f;
+	m->c1r2 *= f;
+
+	m->c2r0 *= f;
+	m->c2r1 *= f;
+	m->c2r2 *= f;
+
+	return 0;
+}
+
+int m3_det(m3 *m, f32 *f_ret) {
+	f32 d0 = m->c1r1 * m->c2r2 - m->c2r1 * m->c1r2;
+	f32 d1 = m->c1r0 * m->c2r2 - m->c2r0 * m->c1r2;
+	f32 d3 = m->c1r0 * m->c2r1 - m->c2r0 * m->c1r1;
+
+	return m->c0r0 * d0 - m->c0r1 * d1 + m->c0r2 * d3;
+}
+
+int m3_set_position(m3 *m, const v3 *v) {
 	if(!m || !v) {
 		eprintf("matrix or vector is null\n");
 		return 1;
@@ -84,6 +113,19 @@ int m3_position(m3 *m, const v3 *v) {
 
 	m->c0r2 = v->x;
 	m->c1r2 = v->y;
+	m->c2r2 = v->w;
+
+	return 0;
+}
+
+int m3_set_scale(m3 *m, const v3 *v) {
+	if(!m || !v) {
+		eprintf("matrix or vector is null\n");
+		return 1;
+	}
+
+	m->c0r0 = v->x;
+	m->c1r1 = v->y;
 	m->c2r2 = v->w;
 
 	return 0;

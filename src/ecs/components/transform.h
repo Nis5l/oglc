@@ -3,11 +3,12 @@
 
 #include "../ecs.h"
 #include "../../data/v3.h"
+#include "../../data/m3.h"
 
 struct transform {
 	entity e;
-	v3 pos;
-	v3 scale;
+	v3 pos, scale;
+	m3 m;
 } typedef transform;
 
 void transforms_init();

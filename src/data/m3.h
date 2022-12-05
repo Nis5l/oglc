@@ -13,6 +13,8 @@ struct m3 {
 int m3_id(m3 *m);
 int m3_add(m3 *m1, const m3 *m2);
 int m3_mul(m3 *m1, const m3 *m2);
-int m3_position(m3 *m, const v3 *v);
+int m3_mul_scalar(m3 *m, f32 f);
+int m3_set_position(m3 *m, const v3 *v);
+int m3_set_scale(m3 *m, const v3 *v);
 
 #endif

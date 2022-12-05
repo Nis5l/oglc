@@ -35,6 +35,10 @@ int transform_component_add(const entity *e) {
 	t->scale.x = 1;
 	t->scale.y = 1;
 	t->scale.w = 1;
+	if(m3_id(&t->m)) {
+		eprintf("could not set matrix to identity matrix, this should never happen");
+		return 3;
+	}
 
 	return 0;
 }
@@ -44,5 +48,24 @@ int transform_component_remove(i32 id) {
 		eprintf("removing component for entity [%d] failed\n", id);
 		return 1;
 	}
+	return 0;
+}
+
+int transform_update_matrix(transform *t) {
+	if(!t) {
+		eprintf("transform is null\n");
+		return 1;
+	}
+
+	if(m3_set_position(&t->m, &t->pos)) {
+		eprintf("could not set transform matrix position, this should never happen\n");
+		return 2;
+	}
+
+	if(m3_set_scale(&t->m, &t->scale)) {
+		eprintf("could not set transform matrix scale, this should never happen\n");
+		return 3;
+	}
+
 	return 0;
 }
