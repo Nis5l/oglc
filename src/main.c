@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include "def.h"
 #include "ecs/ecs.h"
 #include "ecs/components/transform.h"
