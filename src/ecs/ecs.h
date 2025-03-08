@@ -4,14 +4,14 @@
 
 #include "../def.h"
 
-struct entity {
+typedef struct entity {
 	i32 id;
 	u32 gen;
-} typedef entity;
+} entity;
 
 
 void entities_init();
 int entity_create(entity *e);
-int entity_delete(i32 id);
+int entity_delete(const entity *e);
 
 #endif
