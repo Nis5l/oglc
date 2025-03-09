@@ -8,6 +8,7 @@
 #include "ecs/ecs.h"
 #include "ecs/components/transform.h"
 #include "ecs/components/mesh.h"
+#import "input.h"
 
 int create_test_entity(entity *e, i32 mesh_data_id) {
 	dprintf("creating entity\n");
@@ -120,6 +121,8 @@ int main() {
 	ASSERT(!transform_component_get(&e3, &t3), "error getting transform id [%d]\n", e3.id);
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	
+	i32 velocity = 100;
 
 	game_clock gc;
 	if(game_clock_init(&gc)) {
@@ -132,6 +135,19 @@ int main() {
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		if(input_is_key_pressed(&window.data->input, GLFW_KEY_W)) {
+			t3->pos.y = t3->pos.y + velocity * gc.dt;
+		}
+		if(input_is_key_pressed(&window.data->input, GLFW_KEY_S)) {
+			t3->pos.y = t3->pos.y - velocity * gc.dt;
+		}
+		if(input_is_key_pressed(&window.data->input, GLFW_KEY_A)) {
+			t3->pos.x = t3->pos.x - velocity * gc.dt;
+		}
+		if(input_is_key_pressed(&window.data->input, GLFW_KEY_D)) {
+			t3->pos.x = t3->pos.x + velocity * gc.dt;
+		}
 
 		t1->pos.x = t1->pos.x + 100 * gc.dt;
 		t1->pos.y = t1->pos.y + 100 * gc.dt;

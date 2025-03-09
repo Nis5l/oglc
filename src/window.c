@@ -13,6 +13,24 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	ASSERT(window, "window is null");
+
+	window_data* data = (window_data*)glfwGetWindowUserPointer(window);
+
+	if(mods) return;
+
+	switch(action) {
+		case GLFW_PRESS:
+		case GLFW_REPEAT: {
+			input_set_key_pressed(&data->input, key);
+		} break;
+		case GLFW_RELEASE: {
+			input_set_key_released(&data->input, key);
+		} break;
+	}
+}
+
 void window_process_input(window *w) {
 	ASSERT(w, "window is null");
 	ASSERT(w->window, "window.window is null");
@@ -46,8 +64,9 @@ int window_init(window *window) {
 		eprintf("failed to initialize glad");
 		return 3;
 	}
-	glViewport(0, 0, 800, 600);
+	glViewport(0, 0, 1920, 1080);
 	glfwSetFramebufferSizeCallback(window->window, framebuffer_size_callback);
+	glfwSetKeyCallback(window->window, key_callback);
 
 	return 0;
 }

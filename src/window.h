@@ -3,9 +3,11 @@
 
 #include <GLFW/glfw3.h>
 #include "data/m4.h"
+#include "input.h"
 
 typedef struct window_data {
     m4 projection_m;
+	input input;
 } window_data;
 
 typedef struct window {
