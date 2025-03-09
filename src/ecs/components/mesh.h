@@ -6,8 +6,8 @@
 #include "../../data/rgba.h"
 
 typedef struct mesh {
-	i32 sd_id;
 	entity e;
+	i32 sd_id;
 	rgba color;
 } mesh;
 

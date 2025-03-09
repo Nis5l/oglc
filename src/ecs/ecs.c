@@ -37,12 +37,13 @@ int entity_delete(const entity *e) {
 		return 1;
 	}
 
+	//TODO: err when there really is none
 	int component_delete_err = 0;
 	component_delete_err += transform_component_remove(e);
 	component_delete_err += mesh_component_remove(e);
 
 	entities[e->id].id = -1;
-	//entities[e->id].gen = 0; //TODO: i dont think this should be done
+	entities[e->id].gen = 0;
 
 	if(component_delete_err) {
 		eprintf("error deleting componenents for entity [%d]\n", e->id);

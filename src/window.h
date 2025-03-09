@@ -16,5 +16,8 @@ typedef struct window {
 int window_init(window *window);
 void window_process_input(window *w);
 void window_teardown(window *window);
+void window_swap_buffers(window *w);
+void window_poll_events();
+int window_should_close(window *w);
 
 #endif

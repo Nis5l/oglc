@@ -9,14 +9,20 @@
 unsigned int shaderProgram;
 u32 VAO;
 mesh_data mesh_datas[MESH_DATA_LIMIT] = {0};
+i32 mesh_data_map[ENTITY_LIMIT] = {0};
+u32 mesh_data_count = 0;
 
 void mesh_data_init() {
     glGenVertexArrays(1, &VAO);
 
+	mesh_data_count = 0;
 	for(int i = 0; i < MESH_DATA_LIMIT; i++) {
 		mesh_datas[i].id = -1;
 		mesh_datas[i].VBO = -1;
+		mesh_datas[i].entity_count = 0;
+		mesh_data_map[i] = -1;
 		for(int j = 0; j < MESH_DATA_ENTITY_LIMIT; j++) {
+			mesh_datas[i].entity_map[j] = -1;
 			mesh_datas[i].entities[j].id = -1;
 			mesh_datas[i].entities[j].gen = -1;
 		}
@@ -94,27 +100,25 @@ void mesh_data_init() {
 i32 mesh_data_add(const f32 *vertices, u32 vertex_count) {
 	ASSERT(vertices, "vertices is null\n");
 
-	mesh_data *sd = 0;
-	for(int i = 0; i < MESH_DATA_LIMIT; i++) {
-		sd = mesh_datas + i;
-
-		if(mesh_datas[i].id == -1) {
-			mesh_datas[i].id = i;
-			break;
-		}
-	}
-
-	if(!sd) {
+	if(mesh_data_count == MESH_DATA_LIMIT) {
 		eprintf("mesh_data is full\n");
 		return -1;
 	}
 
-	sd->vertex_count = vertex_count;
+	int idx = mesh_data_count;
+	mesh_data *md = mesh_datas + idx;
+	ASSERT(md->id == -1, "mesh data id should be -1\n");
+	md->id = idx;
+	mesh_data_map[idx] = idx;
 
-    glGenBuffers(1, &sd->VBO);
+	mesh_data_count++;
+
+	md->vertex_count = vertex_count;
+
+    glGenBuffers(1, &md->VBO);
 	glBindVertexArray(VAO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, sd->VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, md->VBO);
 	glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(f32) * 3, vertices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -122,45 +126,50 @@ i32 mesh_data_add(const f32 *vertices, u32 vertex_count) {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	return sd->id;
+	return md->id;
 }
 
 i32 mesh_data_remove(i32 id) {
 	ASSERT(id >= 0 && id < MESH_DATA_LIMIT, "id [%d] not in range(0,%d)\n", id, MESH_DATA_LIMIT);
 
-	mesh_data *sd = mesh_datas + id;
-
-	if(sd->id == -1) {
+	int idx = mesh_data_map[id];
+	if(idx == -1) {
 		eprintf("no mesh_data with id [%d]\n", id);
 		return 1;
 	}
 
-    glDeleteBuffers(1, &sd->VBO);
+	mesh_data *md = mesh_datas + idx;
+	ASSERT(md->id != -1, "no mesh_data with id [%d]\n", id);
+
+    glDeleteBuffers(1, &md->VBO);
 
 	i32 err = 0;
-	for(int i = 0; i < MESH_DATA_ENTITY_LIMIT; i++) {
-		if(sd->entities[i].id == -1) break;
+	//NOTE: deleted like this because the meshes unregister themseleves when removed
+	while(md->entity_count > 0) {
+		entity e = md->entities[0];
 
-		err += mesh_component_remove(&sd->entities[i]);
-	}
-
-	mesh_data *last_sd = 0;
-	for(int i = sd->id; i < MESH_DATA_ENTITY_LIMIT; i++) {
-		if(mesh_datas[i].id == -1) break;
-		last_sd = mesh_datas + i;
-	}
-	if(last_sd) {
-		memcpy(sd, last_sd, sizeof(mesh_data));
-	} else {
-		last_sd = sd;
+		err += mesh_component_remove(&e);
 	}
 
-	last_sd->id = -1;
-	last_sd->VBO = -1;
-	for(int j = 0; j < MESH_DATA_ENTITY_LIMIT; j++) {
-		last_sd->entities[j].id = -1;
-		last_sd->entities[j].gen = -1;
+	mesh_data_map[md->id] = -1;
+
+	mesh_data *delete_md = md;
+	if(mesh_data_count > 1 && mesh_data_count != idx + 1) {
+		delete_md = mesh_datas + mesh_data_count - 1;
+		ASSERT(delete_md->id != -1, "last entity does not exist\n");
+
+		mesh_data_map[delete_md->id] = idx;
+		memcpy(md, delete_md, sizeof(mesh_data));
 	}
+
+	delete_md->id = -1;
+	delete_md->VBO = -1;
+	delete_md->vertex_count = -1;
+	for(int j = 0; j < delete_md->entity_count; j++) {
+		delete_md->entities[j].id = -1;
+		delete_md->entities[j].gen = -1;
+	}
+	mesh_data_count--;
 
 	return err;
 }
@@ -168,25 +177,25 @@ i32 mesh_data_remove(i32 id) {
 i32 mesh_data_register_entity(i32 id, const entity *e) {
 	ASSERT(id >= 0 && id < MESH_DATA_LIMIT, "id [%d] not in range(0,%d)\n", id, MESH_DATA_LIMIT);
 
-	mesh_data *sd = mesh_datas + id;
-
-	if(sd->id == -1) {
+	int idx = mesh_data_map[id];
+	if(idx == -1) {
 		eprintf("no mesh_data with id [%d]\n", id);
 		return 1;
 	}
 
-	for(int i = 0; i < MESH_DATA_ENTITY_LIMIT; i++) {
-		if(sd->entities[i].id != -1) continue;
+	mesh_data *md = mesh_datas + idx;
+	ASSERT(md->id != -1, "no mesh_data with id [%d]\n", id);
 
-		sd->entities[i].id = e->id;
-		sd->entities[i].gen = e->gen;
-
-		if(i == MESH_DATA_ENTITY_LIMIT - 1) {
-			eprintf("mesh_data entities full [%d]\n", id);
-			return 1;
-		}
-		break;
+	if(md->entity_count == MESH_DATA_ENTITY_LIMIT) {
+		eprintf("mesh_data entities full [%d]\n", id);
+		return 1;
 	}
+
+	int i = md->entity_count;
+	md->entities[i].id = e->id;
+	md->entities[i].gen = e->gen;
+	md->entity_map[e->id] = i;
+	md->entity_count++;
 
 	return 0;
 }
@@ -194,36 +203,37 @@ i32 mesh_data_register_entity(i32 id, const entity *e) {
 i32 mesh_data_unregister_entity(i32 id, const entity *e) {
 	ASSERT(id >= 0 && id < MESH_DATA_LIMIT, "id [%d] not in range(0,%d)\n", id, MESH_DATA_LIMIT);
 
-	mesh_data *sd = mesh_datas + id;
-
-	if(sd->id == -1) {
+	int idx = mesh_data_map[id];
+	if(idx == -1) {
 		eprintf("no mesh_data with id [%d]\n", id);
 		return 1;
 	}
 
-	for(int i = 0; i < MESH_DATA_ENTITY_LIMIT; i++) {
-		if(sd->entities[i].id == -1) break;
+	mesh_data *md = mesh_datas + idx;
+	ASSERT(md->id != -1, "no mesh_data with id [%d]\n", id);
 
-		if(sd->entities[i].id == e->id && sd->entities[i].gen == e->gen) {
-			entity *last_entity = 0;
-			for(int j = i + 1; j < MESH_DATA_ENTITY_LIMIT; j++) {
-				if(sd->entities[j].id == -1) break;
-				last_entity = sd->entities + j;
-			}
-			if(last_entity) {
-				memcpy(sd->entities + i, last_entity, sizeof(entity));
-			} else {
-				last_entity = sd->entities + i;
-			}
-
-			last_entity->id = -1;
-			last_entity->gen = -1;
-			return 0;
-		}
+	int entity_idx = md->entity_map[e->id];
+	if(entity_idx == -1) {
+		eprintf("entity not found [%d] [%d]\n", entity_idx, e->id);
+		return 1;
 	}
 
-	eprintf("entity not found id [%d] [%d]\n", id, e->id);
-	return 1;
+	entity *entity_delete = md->entities + entity_idx;
+	ASSERT(entity_delete->id == e->id && entity_delete->gen == e->gen, "entity id or gen dont match [%d %d] [%d %d]\n", entity_delete->id, entity_delete->gen, e->id, e->gen);
+
+	if(md->entity_count > 1 && md->entity_count != entity_idx + 1) {
+		entity_delete = md->entities + md->entity_count - 1;
+		ASSERT(entity_delete->id != -1, "last entity does not exist\n");
+
+		md->entity_map[entity_delete->id] = idx;
+		memcpy(md->entities + entity_idx, entity_delete, sizeof(entity));
+	}
+
+	entity_delete->id = -1;
+	entity_delete->gen = -1;
+	md->entity_count--;
+
+	return 0;
 }
 
 i32 mesh_data_teardown() {
@@ -231,8 +241,9 @@ i32 mesh_data_teardown() {
     glDeleteProgram(shaderProgram);
 
 	i32 err = 0;
-	while(mesh_datas[0].id != -1) {
-		err += mesh_data_remove(0);
+	int i = 0;
+	while(mesh_data_count > 0 && i++ < 5) {
+		err += mesh_data_remove(mesh_datas[0].id);
 	}
 
 	return err;
@@ -246,16 +257,19 @@ void mesh_draw(window_data *wd) {
 	GLuint projection_loc = glGetUniformLocation(shaderProgram, "projection");
     glUniformMatrix4fv(projection_loc, 1, GL_TRUE, (GLfloat*)&wd->projection_m);
 
-	for(int i = 0; i < MESH_DATA_LIMIT; i++) {
-		if(mesh_datas[i].id == -1) break;
+	for(int i = 0; i < mesh_data_count; i++) {
+		mesh_data *md = mesh_datas + i;
+		ASSERT(md->id != -1, "mesh data id is -1\n");
 
 		glBindBuffer(GL_ARRAY_BUFFER, mesh_datas[i].VBO);
 
-		for(int j = 0; j < MESH_DATA_ENTITY_LIMIT; j++) {
-			if(mesh_datas[i].entities[j].id == -1) break;
+		for(int j = 0; j < md->entity_count; j++) {
+			entity *e = md->entities + j;
+			ASSERT(e->id != -1, "mesh data id is -1\n");
+
 			transform *t = 0;
-			ASSERT(!transform_component_get(mesh_datas[i].entities + j, &t), "transform not found id [%d]\n", mesh_datas[i].entities[j].id);
 			mesh *s = 0;
+			ASSERT(!transform_component_get(e, &t), "transform not found id [%d]\n", e->id);
 			ASSERT(!mesh_component_get(mesh_datas[i].entities + j, &s), "transform not found id [%d]\n", mesh_datas[i].entities[j].id);
 
 			glUniformMatrix4fv(transform_loc, 1, GL_TRUE, (GLfloat*)&t->m);
@@ -267,4 +281,18 @@ void mesh_draw(window_data *wd) {
 	}
 
 	glBindVertexArray(0);
+}
+
+void print_mesh_data() {
+	dprintf("mesh data:");
+	for(int i = 0; i < mesh_data_count; i++) {
+		mesh_data *md = mesh_datas + i;
+		//TODO: function without format
+		printf(" [%d (", md->id);
+		for(int j = 0; j < md->entity_count; j++) {
+			printf("[%d, %d]", md->entities[j].id, md->entities[j].gen);
+		}
+		printf(")]");
+	}
+	printf("\n");
 }

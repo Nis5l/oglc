@@ -14,6 +14,9 @@ typedef struct mesh_data {
 
 	u32 vertex_count;
 	u32 VBO;
+
+	u32 entity_count;
+	i32 entity_map[MESH_DATA_ENTITY_LIMIT];
 	entity entities[MESH_DATA_ENTITY_LIMIT];
 } mesh_data;
 
@@ -24,5 +27,6 @@ i32 mesh_data_teardown();
 i32 mesh_data_register_entity(i32 id, const entity *e);
 i32 mesh_data_unregister_entity(i32 id, const entity *e);
 void mesh_draw(window_data *wd);
+void print_mesh_data();
 
 #endif

@@ -2,11 +2,12 @@
 #include "component/component.h"
 #include "../../mesh_data.h"
 
+u32 mesh_component_count = 0;
 mesh meshs[ENTITY_LIMIT] = {0};
 i32 meshs_entity_map[ENTITY_LIMIT] = {0};
 
 void mesh_components_init() {
-	components_init(meshs, sizeof(mesh), meshs_entity_map);
+	components_init(meshs, sizeof(mesh), meshs_entity_map, &mesh_component_count);
 }
 
 int mesh_component_get(const entity *e, mesh **s_ret) {
@@ -23,11 +24,11 @@ int mesh_component_get(const entity *e, mesh **s_ret) {
 
 int mesh_component_add(const entity *e, i32 sd_id) {
 	ASSERT(e, "entity is null");
-	if(component_add(meshs, sizeof(mesh), meshs_entity_map, e)) {
+
+	if(component_add(meshs, sizeof(mesh), meshs_entity_map, &mesh_component_count, e)) {
 		eprintf("adding mesh failed\n");
 		return 1;
 	}
-
 	mesh *s;
 	ASSERT(!mesh_component_get(e, &s), "mesh for entity [%d] not found\n", e->id);
 
@@ -50,7 +51,7 @@ int mesh_component_remove(const entity *e) {
 
 	if(mesh_data_unregister_entity(s->sd_id, e)) return 2;
 
-	ASSERT(!component_remove(meshs, sizeof(mesh), meshs_entity_map, e), "removing mesh for entity [%d] failed\n", e->id);
+	ASSERT(!component_remove(meshs, sizeof(mesh), meshs_entity_map, &mesh_component_count, e), "removing mesh for entity [%d] failed\n", e->id);
 
 	return 0;
 }

@@ -2,11 +2,12 @@
 #include "component/component.h"
 #include "../../data/m4.h"
 
+u32 transform_component_count = 0;
 transform transforms[ENTITY_LIMIT] = {0};
 i32 transforms_entity_map[ENTITY_LIMIT] = {0};
 
 void transform_components_init() {
-	components_init(transforms, sizeof(transform), transforms_entity_map);
+	components_init(transforms, sizeof(transform), transforms_entity_map, &transform_component_count);
 }
 
 int transform_component_get(const entity *e, transform **t_ret) {
@@ -22,7 +23,7 @@ int transform_component_get(const entity *e, transform **t_ret) {
 
 int transform_component_add(const entity *e) {
 	ASSERT(e, "entity is null");
-	if(component_add(transforms, sizeof(transform), transforms_entity_map, e)) {
+	if(component_add(transforms, sizeof(transform), transforms_entity_map, &transform_component_count, e)) {
 		eprintf("adding transform failed\n");
 		return 1;
 	}
@@ -47,7 +48,7 @@ int transform_component_add(const entity *e) {
 int transform_component_remove(const entity *e) {
 	ASSERT(e, "entity is null");
 	ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
-	if(component_remove(transforms, sizeof(transform), transforms_entity_map, e)) {
+	if(component_remove(transforms, sizeof(transform), transforms_entity_map, &transform_component_count, e)) {
 		eprintf("removing transform for entity [%d] failed\n", e->id);
 		return 1;
 	}

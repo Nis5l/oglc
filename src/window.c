@@ -7,9 +7,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	ASSERT(window, "window is null");
 
 	window_data* data = (window_data*)glfwGetWindowUserPointer(window);
-	dprintf("%d %d\n", width, height);
+	dprintf("window resize [%d, %d]\n", width, height);
 	m4_ortho(&data->projection_m, 0.0f, (f32)width, 0.0f, (f32)height, 0.1f, 100.0f);
-	//m4_ortho(&data->projection_m, -1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
 
 	glViewport(0, 0, width, height);
 }
@@ -53,7 +52,26 @@ int window_init(window *window) {
 	return 0;
 }
 
-void window_teardown(window *window) {
-	free(window->data);
-	glfwDestroyWindow(window->window);
+void window_teardown(window *w) {
+	ASSERT(w, "window is null");
+
+	free(w->data);
+	glfwDestroyWindow(w->window);
+}
+
+
+void window_swap_buffers(window *w) {
+	ASSERT(w, "window is null");
+
+	glfwSwapBuffers(w->window);
+}
+
+void window_poll_events() {
+	glfwPollEvents();
+}
+
+int window_should_close(window *w) {
+	ASSERT(w, "window is null");
+
+	return glfwWindowShouldClose(w->window);
 }
