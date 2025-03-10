@@ -1,6 +1,16 @@
 #include "v4.h"
 #include "m4.h"
 
+void v4_clone(v4 *v1, const v4 *v2) {
+	ASSERT(v1, "vector v1 is null\n");
+	ASSERT(v2, "vector v2 is null\n");
+
+	v1->x = v2->x;
+	v1->y = v2->y;
+	v1->z = v2->z;
+	v1->w = v2->w;
+}
+
 void v4_add(v4 *v1, const v4 *v2) {
 	ASSERT(v1, "vector v1 is null\n");
 	ASSERT(v2, "vector v2 is null\n");

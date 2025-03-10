@@ -10,11 +10,11 @@ void mesh_components_init() {
 	components_init(meshs, sizeof(mesh), meshs_entity_map, &mesh_component_count);
 }
 
-int mesh_component_get(const entity *e, mesh **s_ret) {
+int mesh_component_get(const entity *e, mesh **m_ret) {
 	ASSERT(e, "entity is null");
-	ASSERT(s_ret, "s_ret is null");
+	ASSERT(m_ret, "s_ret is null");
 
-	if(component_get(meshs, sizeof(mesh), meshs_entity_map, e, (void**)s_ret)) {
+	if(component_get(meshs, sizeof(mesh), meshs_entity_map, e, (void**)m_ret)) {
 		eprintf("could not get mesh\n");
 		return 1;
 	}
@@ -22,7 +22,7 @@ int mesh_component_get(const entity *e, mesh **s_ret) {
 	return 0;
 }
 
-int mesh_component_add(const entity *e, i32 sd_id) {
+int mesh_component_add(const entity *e, i32 md_id) {
 	ASSERT(e, "entity is null");
 
 	if(component_add(meshs, sizeof(mesh), meshs_entity_map, &mesh_component_count, e)) {
@@ -32,9 +32,9 @@ int mesh_component_add(const entity *e, i32 sd_id) {
 	mesh *s;
 	ASSERT(!mesh_component_get(e, &s), "mesh for entity [%d] not found\n", e->id);
 
-	s->sd_id = sd_id;
+	s->sd_id = md_id;
 
-	if(mesh_data_register_entity(sd_id, e)) return 2;
+	if(mesh_data_register_entity(md_id, e)) return 2;
 
 	return 0;
 }

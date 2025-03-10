@@ -25,6 +25,31 @@ void m4_id(m4 *m) {
 	m->c3r3 = 1;
 }
 
+void m4_clone(m4 *m1, const m4 *m2) {
+	ASSERT(m1, "matrix m1 is null\n");
+	ASSERT(m2, "matrix m2 is null\n");
+
+	m1->c0r0 = m2->c0r0;
+	m1->c0r1 = m2->c0r1;
+	m1->c0r2 = m2->c0r2;
+	m1->c0r3 = m2->c0r3;
+
+	m1->c1r0 = m2->c1r0;
+	m1->c1r1 = m2->c1r1;
+	m1->c1r2 = m2->c1r2;
+	m1->c1r3 = m2->c1r3;
+
+	m1->c2r0 = m2->c2r0;
+	m1->c2r1 = m2->c2r1;
+	m1->c2r2 = m2->c2r2;
+	m1->c2r3 = m2->c2r3;
+
+	m1->c3r0 = m2->c3r0;
+	m1->c3r1 = m2->c3r1;
+	m1->c3r2 = m2->c3r2;
+	m1->c3r3 = m2->c3r3;
+}
+
 void m4_add(m4 *m1, const m4 *m2) {
 	ASSERT(m1, "matrix m1 is null\n");
 	ASSERT(m2, "matrix m2 is null\n");
@@ -181,26 +206,46 @@ void m4_ortho(m4 *m, f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far
     m->c3r3 = 1.0f;
 }
 
-/* void m4_ortho(m4 *m, f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far) {
-    ASSERT(m, "Matrix is null\n");
+void m4_inv(m4 *out, const m4 *m) {
+	f32 a2323 = m->c2r2 * m->c3r3 - m->c2r3 * m->c3r2;
+	f32 a1323 = m->c2r1 * m->c3r3 - m->c2r3 * m->c3r1;
+	f32 a1223 = m->c2r1 * m->c3r2 - m->c2r2 * m->c3r1;
+	f32 a0323 = m->c2r0 * m->c3r3 - m->c2r3 * m->c3r0;
+	f32 a0223 = m->c2r0 * m->c3r2 - m->c2r2 * m->c3r0;
+	f32 a0123 = m->c2r0 * m->c3r1 - m->c2r1 * m->c3r0;
+	f32 a2313 = m->c1r2 * m->c3r3 - m->c1r3 * m->c3r2;
+	f32 a1313 = m->c1r1 * m->c3r3 - m->c1r3 * m->c3r1;
+	f32 a1213 = m->c1r1 * m->c3r2 - m->c1r2 * m->c3r1;
+	f32 a2312 = m->c1r2 * m->c2r3 - m->c1r3 * m->c2r2;
+	f32 a1312 = m->c1r1 * m->c2r3 - m->c1r3 * m->c2r1;
+	f32 a1212 = m->c1r1 * m->c2r2 - m->c1r2 * m->c2r1;
+	f32 a0313 = m->c1r0 * m->c3r3 - m->c1r3 * m->c3r0;
+	f32 a0213 = m->c1r0 * m->c3r2 - m->c1r2 * m->c3r0;
+	f32 a0312 = m->c1r0 * m->c2r3 - m->c1r3 * m->c2r0;
+	f32 a0212 = m->c1r0 * m->c2r2 - m->c1r2 * m->c2r0;
+	f32 a0113 = m->c1r0 * m->c3r1 - m->c1r1 * m->c3r0;
+	f32 a0112 = m->c1r0 * m->c2r1 - m->c1r1 * m->c2r0;
 
-    m->c0r0 = 2.0f / (right - left);
-    m->c0r1 = 0.0f;
-    m->c0r2 = 0.0f;
-    m->c0r3 = 0.0f;
+	f32 det = m->c0r0 * ( m->c1r1 * a2323 - m->c1r2 * a1323 + m->c1r3 * a1223 )
+		- m->c0r1 * (m->c1r0 * a2323 - m->c1r2 * a0323 + m->c1r3 * a0223)
+		+ m->c0r2 * (m->c1r0 * a1323 - m->c1r1 * a0323 + m->c1r3 * a0123)
+		- m->c0r3 * (m->c1r0 * a1223 - m->c1r1 * a0223 + m->c1r2 * a0123);
+	det = 1 / det;
 
-    m->c1r0 = 0.0f;
-    m->c1r1 = 2.0f / (top - bottom);
-    m->c1r2 = 0.0f;
-    m->c1r3 = 0.0f;
-
-    m->c2r0 = 0.0f;
-    m->c2r1 = 0.0f;
-    m->c2r2 = -2.0f / (far - near);
-    m->c2r3 = 0.0f;
-
-    m->c3r0 = -(right + left) / (right - left);
-    m->c3r1 = -(top + bottom) / (top - bottom);
-    m->c3r2 = -(far + near) / (far - near);
-    m->c3r3 = 1.0f;
-} */
+   out->c0r0 = det *  (m->c1r1 * a2323 - m->c1r2 * a1323 + m->c1r3 * a1223);
+   out->c0r1 = det * -(m->c0r1 * a2323 - m->c0r2 * a1323 + m->c0r3 * a1223);
+   out->c0r2 = det *  (m->c0r1 * a2313 - m->c0r2 * a1313 + m->c0r3 * a1213);
+   out->c0r3 = det * -(m->c0r1 * a2312 - m->c0r2 * a1312 + m->c0r3 * a1212);
+   out->c1r0 = det * -(m->c1r0 * a2323 - m->c1r2 * a0323 + m->c1r3 * a0223);
+   out->c1r1 = det *  (m->c0r0 * a2323 - m->c0r2 * a0323 + m->c0r3 * a0223);
+   out->c1r2 = det * -(m->c0r0 * a2313 - m->c0r2 * a0313 + m->c0r3 * a0213);
+   out->c1r3 = det *  (m->c0r0 * a2312 - m->c0r2 * a0312 + m->c0r3 * a0212);
+   out->c2r0 = det *  (m->c1r0 * a1323 - m->c1r1 * a0323 + m->c1r3 * a0123);
+   out->c2r1 = det * -(m->c0r0 * a1323 - m->c0r1 * a0323 + m->c0r3 * a0123);
+   out->c2r2 = det *  (m->c0r0 * a1313 - m->c0r1 * a0313 + m->c0r3 * a0113);
+   out->c2r3 = det * -(m->c0r0 * a1312 - m->c0r1 * a0312 + m->c0r3 * a0112);
+   out->c3r0 = det * -(m->c1r0 * a1223 - m->c1r1 * a0223 + m->c1r2 * a0123);
+   out->c3r1 = det *  (m->c0r0 * a1223 - m->c0r1 * a0223 + m->c0r2 * a0123);
+   out->c3r2 = det * -(m->c0r0 * a1213 - m->c0r1 * a0213 + m->c0r2 * a0113);
+   out->c3r3 = det *  (m->c0r0 * a1212 - m->c0r1 * a0212 + m->c0r2 * a0112);
+}

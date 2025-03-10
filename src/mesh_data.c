@@ -4,6 +4,7 @@
 #include "mesh_data.h"
 #include "ecs/components/mesh.h"
 #include "ecs/components/transform.h"
+#include "ecs/components/camera.h"
 #include "window.h"
 
 unsigned int shaderProgram;
@@ -33,11 +34,13 @@ void mesh_data_init() {
 	{
 		const char *vertexShaderSource = "#version 330 core\n"
 			"layout (location = 0) in vec3 aPos;\n"
+			"uniform mat4 view;\n"
 			"uniform mat4 transform;\n"
 			"uniform mat4 projection;\n"
 			"void main()\n"
 			"{\n"
-			"   gl_Position = projection * transform * vec4(aPos, 1.0);\n"
+			"   gl_Position = projection * view * transform * vec4(aPos, 1.0);\n"
+			//"   gl_Position = projection * transform * vec4(aPos, 1.0);\n"
 			//"   gl_Position = transform * vec4(aPos, 1.0);\n"
 			//"   gl_Position = vec4(aPos, 1.0);\n"
 			"}\0";
@@ -253,9 +256,15 @@ void mesh_draw(window_data *wd) {
     glUseProgram(shaderProgram);
 	glBindVertexArray(VAO);
 
+	camera *c;
+
+	ASSERT(!camera_component_get(&wd->camera, &c), "camera not found for id [%d]\n", wd->camera.id);
+
 	GLuint transform_loc = glGetUniformLocation(shaderProgram, "transform");
 	GLuint projection_loc = glGetUniformLocation(shaderProgram, "projection");
+	GLuint view_loc = glGetUniformLocation(shaderProgram, "view");
     glUniformMatrix4fv(projection_loc, 1, GL_TRUE, (GLfloat*)&wd->projection_m);
+	glUniformMatrix4fv(view_loc, 1, GL_TRUE, (GLfloat*)&c->m);
 
 	for(int i = 0; i < mesh_data_count; i++) {
 		mesh_data *md = mesh_datas + i;
@@ -269,8 +278,8 @@ void mesh_draw(window_data *wd) {
 
 			transform *t = 0;
 			mesh *s = 0;
-			ASSERT(!transform_component_get(e, &t), "transform not found id [%d]\n", e->id);
-			ASSERT(!mesh_component_get(mesh_datas[i].entities + j, &s), "transform not found id [%d]\n", mesh_datas[i].entities[j].id);
+			ASSERT(!transform_component_get(e, &t), "transform not found for id [%d]\n", e->id);
+			ASSERT(!mesh_component_get(mesh_datas[i].entities + j, &s), "transform not found for id [%d]\n", mesh_datas[i].entities[j].id);
 
 			glUniformMatrix4fv(transform_loc, 1, GL_TRUE, (GLfloat*)&t->m);
 
@@ -283,7 +292,7 @@ void mesh_draw(window_data *wd) {
 	glBindVertexArray(0);
 }
 
-void print_mesh_data() {
+void mesh_data_print() {
 	dprintf("mesh data:");
 	for(int i = 0; i < mesh_data_count; i++) {
 		mesh_data *md = mesh_datas + i;

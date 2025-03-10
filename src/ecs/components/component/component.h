@@ -7,6 +7,6 @@ void components_init(void *components, size_t size, i32 *entity_map, u32 *compon
 int component_get(void *components, size_t size, i32 *entity_map, const entity *e, void **t_ret);
 int component_add(void *components, size_t size, i32 *entity_map, u32 *component_count, const entity *e);
 int component_remove(void *components, size_t size, i32 *entity_map, u32 *component_count, const entity *e);
-void print_component_entities(void *components, size_t size);
+void component_entities_print(void *components, size_t size);
 
 #endif

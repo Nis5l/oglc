@@ -8,7 +8,8 @@
 #include "ecs/ecs.h"
 #include "ecs/components/transform.h"
 #include "ecs/components/mesh.h"
-#import "input.h"
+#include "ecs/components/camera.h"
+#include "input.h"
 
 int create_test_entity(entity *e, i32 mesh_data_id) {
 	dprintf("creating entity\n");
@@ -67,6 +68,8 @@ int main() {
 	transform_components_init();
 	dprintf("initializing mesh components\n");
 	mesh_components_init();
+	dprintf("initializing camera components\n");
+	camera_components_init();
 
 	i32 triangle_mesh_id, square_mesh_id;
 	{
@@ -101,7 +104,7 @@ int main() {
 	}
 
 
-	entity e1, e2, e3;
+	entity e1, e2, player_entity;
 	if(create_test_entity(&e1, triangle_mesh_id)) {
 		eprintf("error creating test entity\n");
 		return 1;
@@ -110,19 +113,30 @@ int main() {
 		eprintf("error creating test entity\n");
 		return 1;
 	}
-	if(create_test_entity(&e3, square_mesh_id)) {
+	if(create_test_entity(&player_entity, square_mesh_id)) {
 		eprintf("error creating test entity\n");
 		return 1;
 	}
 
-	transform *t1 = 0, *t2 = 0, *t3 = 0;
+	if(camera_component_add(&player_entity)) {
+		eprintf("error adding camera\n");
+		return 1;
+	}
+	window_set_camera(&window, player_entity);
+
+	transform *player_transform = 0, *t1 = 0;
+	ASSERT(!transform_component_get(&player_entity, &player_transform), "error getting transform id [%d]\n", player_entity.id);
 	ASSERT(!transform_component_get(&e1, &t1), "error getting transform id [%d]\n", e1.id);
-	ASSERT(!transform_component_get(&e2, &t2), "error getting transform id [%d]\n", e2.id);
-	ASSERT(!transform_component_get(&e3, &t3), "error getting transform id [%d]\n", e3.id);
+	player_transform->scale.x = 50;
+	player_transform->scale.y = 50;
+	player_transform->scale.z = 50;
+
+	camera *c;
+	camera_component_get(&player_entity, &c);
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	
-	i32 velocity = 100;
+	i32 velocity = 1000;
 
 	game_clock gc;
 	if(game_clock_init(&gc)) {
@@ -136,26 +150,27 @@ int main() {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		if(input_is_key_pressed(&window.data->input, GLFW_KEY_Q)) {
+			player_transform->pos.z = player_transform->pos.z - velocity * gc.dt;
+		}
+		if(input_is_key_pressed(&window.data->input, GLFW_KEY_E)) {
+			player_transform->pos.z = player_transform->pos.z + velocity * gc.dt;
+		}
 		if(input_is_key_pressed(&window.data->input, GLFW_KEY_W)) {
-			t3->pos.y = t3->pos.y + velocity * gc.dt;
+			player_transform->pos.y = player_transform->pos.y + velocity * gc.dt;
 		}
 		if(input_is_key_pressed(&window.data->input, GLFW_KEY_S)) {
-			t3->pos.y = t3->pos.y - velocity * gc.dt;
+			player_transform->pos.y = player_transform->pos.y - velocity * gc.dt;
 		}
 		if(input_is_key_pressed(&window.data->input, GLFW_KEY_A)) {
-			t3->pos.x = t3->pos.x - velocity * gc.dt;
+			player_transform->pos.x = player_transform->pos.x - velocity * gc.dt;
 		}
 		if(input_is_key_pressed(&window.data->input, GLFW_KEY_D)) {
-			t3->pos.x = t3->pos.x + velocity * gc.dt;
+			player_transform->pos.x = player_transform->pos.x + velocity * gc.dt;
 		}
 
-		t1->pos.x = t1->pos.x + 100 * gc.dt;
-		t1->pos.y = t1->pos.y + 100 * gc.dt;
-
-		t2->pos.x = t2->pos.x + 200 * gc.dt;
-		t2->pos.y = t2->pos.y + 100 * gc.dt;
-
 		transform_update_matrices();
+		camera_update_matrices(window.data->width, window.data->height);
 		//transform_print_matrix(&e);
 
 		mesh_draw(window.data);

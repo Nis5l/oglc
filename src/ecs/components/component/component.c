@@ -96,7 +96,7 @@ int component_remove(void *components, size_t size, i32 *entity_map, u32 *compon
 	return 0;
 }
 
-void print_component_entities(void *components, size_t size) {
+void component_entities_print(void *components, size_t size) {
 	dprintf("components:");
 	for(int i = 0; i < ENTITY_LIMIT; i++) {
 		entity *e = (entity*)((u8*)components + i * size);

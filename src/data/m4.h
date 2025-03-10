@@ -20,5 +20,7 @@ void m4_set_scale(m4 *m, const v4 *v);
 void m4_det(m4 *m, f32 *f_ret);
 void m4_print(const m4 *m);
 void m4_ortho(m4 *m, f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far);
+void m4_inv(m4 *out, const m4 *m);
+void m4_clone(m4 *m1, const m4 *m2);
 
 #endif

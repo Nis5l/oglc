@@ -27,6 +27,6 @@ i32 mesh_data_teardown();
 i32 mesh_data_register_entity(i32 id, const entity *e);
 i32 mesh_data_unregister_entity(i32 id, const entity *e);
 void mesh_draw(window_data *wd);
-void print_mesh_data();
+void mesh_data_print();
 
 #endif

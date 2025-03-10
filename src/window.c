@@ -2,13 +2,17 @@
 #include <glad/glad.h>
 #include "window.h"
 #include "def.h"
+#include "input.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	ASSERT(window, "window is null");
 
 	window_data* data = (window_data*)glfwGetWindowUserPointer(window);
 	dprintf("window resize [%d, %d]\n", width, height);
-	m4_ortho(&data->projection_m, 0.0f, (f32)width, 0.0f, (f32)height, 0.1f, 100.0f);
+
+	data->width = width;
+	data->height = height;
+	m4_ortho(&data->projection_m, 0.0f, (f32)width, 0.0f, (f32)height, 0.1f, 1000.0f);
 
 	glViewport(0, 0, width, height);
 }
@@ -57,6 +61,14 @@ int window_init(window *window) {
 		return 2;
 	}
 	window->data = malloc(sizeof(window_data));
+	window->data->camera.id = -1;
+	window->data->camera.gen = -1;
+	window->data->width = 1920;
+	window->data->height = 1080;
+	input_init(&window->data->input);
+
+	m4_id(&window->data->projection_m);
+
 	glfwSetWindowUserPointer(window->window, window->data);
 	glfwMakeContextCurrent(window->window);
 
@@ -64,7 +76,7 @@ int window_init(window *window) {
 		eprintf("failed to initialize glad");
 		return 3;
 	}
-	glViewport(0, 0, 1920, 1080);
+	glViewport(0, 0, window->data->width, window->data->height);
 	glfwSetFramebufferSizeCallback(window->window, framebuffer_size_callback);
 	glfwSetKeyCallback(window->window, key_callback);
 
@@ -93,4 +105,11 @@ int window_should_close(window *w) {
 	ASSERT(w, "window is null");
 
 	return glfwWindowShouldClose(w->window);
+}
+
+void window_set_camera(window *w, entity e) {
+	ASSERT(w, "window is null");
+	ASSERT(e.id != -1, "entity id is -1");
+	
+	w->data->camera = e;
 }
