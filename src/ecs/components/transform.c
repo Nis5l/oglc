@@ -12,6 +12,7 @@ void transform_components_init() {
 
 int transform_component_get(const entity *e, transform **t_ret) {
 	ASSERT(e, "entity is null\n");
+	ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
 	ASSERT(t_ret, "t_ret is null\n");
 
 	if(component_get(transforms, sizeof(transform), transform_entity_map, e, (void**)t_ret)) {
@@ -24,6 +25,7 @@ int transform_component_get(const entity *e, transform **t_ret) {
 
 int transform_component_add(const entity *e) {
 	ASSERT(e, "entity is null\n");
+	ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
 
 	if(component_add(transforms, sizeof(transform), transform_entity_map, &transform_component_count, e)) {
 		eprintf("adding transform failed\n");

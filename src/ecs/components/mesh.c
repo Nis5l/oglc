@@ -12,6 +12,7 @@ void mesh_components_init() {
 
 int mesh_component_get(const entity *e, mesh **m_ret) {
 	ASSERT(e, "entity is null");
+	ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
 	ASSERT(m_ret, "s_ret is null");
 
 	if(component_get(meshs, sizeof(mesh), meshs_entity_map, e, (void**)m_ret)) {
@@ -24,6 +25,7 @@ int mesh_component_get(const entity *e, mesh **m_ret) {
 
 int mesh_component_add(const entity *e, i32 md_id) {
 	ASSERT(e, "entity is null");
+	ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
 
 	if(component_add(meshs, sizeof(mesh), meshs_entity_map, &mesh_component_count, e)) {
 		eprintf("adding mesh failed\n");

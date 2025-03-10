@@ -35,6 +35,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 }
 
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+	ASSERT(window, "window is null");
+
+	window_data* data = (window_data*)glfwGetWindowUserPointer(window);
+
+	input_set_mouse_pos(&data->input, xpos, ypos);
+}
+
 void window_process_input(window *w) {
 	ASSERT(w, "window is null");
 	ASSERT(w->window, "window.window is null");
@@ -79,6 +87,7 @@ int window_init(window *window) {
 	glViewport(0, 0, window->data->width, window->data->height);
 	glfwSetFramebufferSizeCallback(window->window, framebuffer_size_callback);
 	glfwSetKeyCallback(window->window, key_callback);
+	glfwSetCursorPosCallback(window->window, cursor_position_callback);
 
 	return 0;
 }

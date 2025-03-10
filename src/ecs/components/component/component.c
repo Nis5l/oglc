@@ -15,6 +15,7 @@ void components_init(void *components, size_t size, i32 *entity_map, u32 *compon
 
 int component_get(void *components, size_t size, i32 *entity_map, const entity *e, void **t_ret) {
 	ASSERT(e, "entity is null\n");
+	ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
 	ASSERT(t_ret, "component return is null\n");
 
 	int i = entity_map[e->id];
@@ -37,6 +38,7 @@ int component_get(void *components, size_t size, i32 *entity_map, const entity *
 
 int component_add(void *components, size_t size, i32 *entity_map, u32 *component_count, const entity *e) {
 	ASSERT(e, "entity is null\n");
+	ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
 
 	if(entity_map[e->id] != -1) {
 		eprintf("entity with id [%d] already has component\n", e->id);

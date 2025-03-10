@@ -25,3 +25,16 @@ u8 input_is_key_pressed(input *i, u8 key) {
 
 	return i->keys[key];
 }
+
+void input_set_mouse_pos(input *i, double xpos, double ypos) {
+	ASSERT(i, "input is null");
+
+	i->mouse.mouse_x = xpos;
+	i->mouse.mouse_y = ypos;
+}
+
+mouse input_get_mouse_pos(input *i) {
+	ASSERT(i, "input is null");
+
+	return i->mouse;
+}

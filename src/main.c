@@ -104,17 +104,17 @@ int main() {
 	}
 
 
-	entity e1, e2, player_entity;
+	entity e1, mouse_cursor_entity, player_entity;
 	if(create_test_entity(&e1, triangle_mesh_id)) {
 		eprintf("error creating test entity\n");
 		return 1;
 	}
-	if(create_test_entity(&e2, triangle_mesh_id)) {
-		eprintf("error creating test entity\n");
+	if(create_test_entity(&mouse_cursor_entity, square_mesh_id)) {
+		eprintf("error creating mouse cursor entity\n");
 		return 1;
 	}
 	if(create_test_entity(&player_entity, square_mesh_id)) {
-		eprintf("error creating test entity\n");
+		eprintf("error creating player entity\n");
 		return 1;
 	}
 
@@ -124,9 +124,12 @@ int main() {
 	}
 	window_set_camera(&window, player_entity);
 
-	transform *player_transform = 0, *t1 = 0;
-	ASSERT(!transform_component_get(&player_entity, &player_transform), "error getting transform id [%d]\n", player_entity.id);
-	ASSERT(!transform_component_get(&e1, &t1), "error getting transform id [%d]\n", e1.id);
+	transform *player_transform = 0, *mouse_cursor_transform = 0;
+	ASSERT(!transform_component_get(&player_entity, &player_transform), "error getting transform for id [%d]\n", player_entity.id);
+	ASSERT(!transform_component_get(&mouse_cursor_entity, &mouse_cursor_transform), "error getting transform for id [%d]\n", mouse_cursor_entity.id);
+	mouse_cursor_transform->scale.x = 10;
+	mouse_cursor_transform->scale.y = 10;
+	mouse_cursor_transform->scale.z = 10;
 	player_transform->scale.x = 50;
 	player_transform->scale.y = 50;
 	player_transform->scale.z = 50;
@@ -169,8 +172,14 @@ int main() {
 			player_transform->pos.x = player_transform->pos.x + velocity * gc.dt;
 		}
 
+		camera_update_pos(window.data->width, window.data->height);
+
+		mouse cursor_pos = camera_get_relative_mouse_pos(&player_entity, &window.data->input.mouse, window.data->width, window.data->height);
+		mouse_cursor_transform->pos.x = cursor_pos.mouse_x;
+		mouse_cursor_transform->pos.y = cursor_pos.mouse_y;
+
 		transform_update_matrices();
-		camera_update_matrices(window.data->width, window.data->height);
+		camera_update_matrices();
 		//transform_print_matrix(&e);
 
 		mesh_draw(window.data);
