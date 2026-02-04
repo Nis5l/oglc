@@ -1,6 +1,7 @@
 #include "transform.h"
 #include "component/component.h"
 #include "../../data/m4.h"
+#include "../../render/render_batch.h"
 
 u32 transform_component_count = 0;
 transform transforms[ENTITY_LIMIT] = {0};
@@ -46,6 +47,8 @@ int transform_component_add(const entity *e) {
 	t->scale.w = 1;
 	m4_id(&t->m);
 
+	if(render_batch_check_add(e)) return 2;
+
 	return 0;
 }
 
@@ -57,6 +60,9 @@ int transform_component_remove(const entity *e) {
 		eprintf("removing transform for entity [%d] failed\n", e->id);
 		return 1;
 	}
+
+	if(render_batch_check_remove(e)) return 2;
+
 	return 0;
 }
 

@@ -7,7 +7,7 @@
 
 typedef struct mesh {
 	entity e;
-	i32 sd_id;
+	i32 md_id;
 	rgba color;
 } mesh;
 

@@ -20,7 +20,7 @@ int component_get(void *components, size_t size, i32 *entity_map, const entity *
 
 	int i = entity_map[e->id];
 	if(i == -1) { 
-		eprintf("entity with id [%d] not found\n", e->id);
+		//eprintf("entity with id [%d] not found\n", e->id);
 		return 1;
 	}
 
@@ -80,6 +80,7 @@ int component_remove(void *components, size_t size, i32 *entity_map, u32 *compon
 
 	entity_map[e_s->id] = -1;
 
+	//TODO: for this and all others, are both if checks needed here?
 	entity *component_delete = e_s;
 	if(*component_count > 1 && *component_count != idx + 1) {
 		int i = (*component_count - 1);

@@ -2,16 +2,17 @@
 #include <string.h>
 #include <glad/glad.h>
 #include "mesh_data.h"
-#include "ecs/components/mesh.h"
-#include "ecs/components/transform.h"
-#include "ecs/components/camera.h"
-#include "window.h"
+#include "../ecs/components/mesh.h"
+#include "../ecs/components/transform.h"
+#include "../ecs/components/camera.h"
+#include "../window.h"
 
-unsigned int shaderProgram;
-u32 VAO;
 mesh_data mesh_datas[MESH_DATA_LIMIT] = {0};
 i32 mesh_data_map[ENTITY_LIMIT] = {0};
 u32 mesh_data_count = 0;
+
+u32 shaderProgram;
+u32 VAO;
 
 void mesh_data_init() {
     glGenVertexArrays(1, &VAO);
@@ -34,12 +35,15 @@ void mesh_data_init() {
 	{
 		const char *vertexShaderSource = "#version 330 core\n"
 			"layout (location = 0) in vec3 aPos;\n"
+			"layout (location = 1) in vec2 aUV;\n"
+			"out vec2 TexCoord;\n"
 			"uniform mat4 view;\n"
 			"uniform mat4 transform;\n"
 			"uniform mat4 projection;\n"
 			"void main()\n"
 			"{\n"
 			"   gl_Position = projection * view * transform * vec4(aPos, 1.0);\n"
+			"	TexCoord = aUV;\n"
 			//"   gl_Position = projection * transform * vec4(aPos, 1.0);\n"
 			//"   gl_Position = transform * vec4(aPos, 1.0);\n"
 			//"   gl_Position = vec4(aPos, 1.0);\n"
@@ -64,9 +68,12 @@ void mesh_data_init() {
 	{
 		const char *fragmentShaderSource = "#version 330 core\n"
 			"out vec4 FragColor;\n"
+			"in vec2 TexCoord;\n"
+			"uniform sampler2D uTexture;\n"
 			"void main()\n"
 			"{\n"
-			"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f); // RGB color\n"
+			//"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f); // RGB color\n"
+			"	FragColor = texture(uTexture, TexCoord);\n"
 			"}\0";
 		fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 		glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
@@ -83,6 +90,7 @@ void mesh_data_init() {
 
 	{
 		shaderProgram = glCreateProgram();
+		dprintf("create shaderProgram %d\n", shaderProgram);
 		glAttachShader(shaderProgram, vertexShader);
 		glAttachShader(shaderProgram, fragmentShader);
 		glLinkProgram(shaderProgram);
@@ -122,14 +130,45 @@ i32 mesh_data_add(const f32 *vertices, u32 vertex_count) {
 	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, md->VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(f32) * 3, vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(f32) * 5 /*x y z u v*/, vertices, GL_STATIC_DRAW);
+
+	// pos
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(f32), (void*)0);
 	glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(f32), (void*)(3 * sizeof(f32)));
+    glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	return md->id;
+}
+
+int mesh_data_use(i32 md_id) {
+	ASSERT(md_id >= 0 && md_id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", md_id, MESH_DATA_LIMIT);
+
+	i32 idx = mesh_data_map[md_id];
+	if(idx == -1) return 1;
+
+	mesh_data *md = mesh_datas + idx;
+	ASSERT(md->id != -1, "mesh data id not set\n");
+	glBindBuffer(GL_ARRAY_BUFFER, md->VBO);
+
+	return 0;
+}
+
+int mesh_data_draw(i32 md_id) {
+	ASSERT(md_id >= 0 && md_id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", md_id, MESH_DATA_LIMIT);
+
+	i32 idx = mesh_data_map[md_id];
+	if(idx == -1) return 1;
+
+	mesh_data *md = mesh_datas + idx;
+	ASSERT(md->id != -1, "mesh data id not set\n");
+	glDrawArrays(GL_TRIANGLES, 0, md->vertex_count);
+
+	return 0;
 }
 
 i32 mesh_data_remove(i32 id) {
@@ -154,7 +193,7 @@ i32 mesh_data_remove(i32 id) {
 		err += mesh_component_remove(&e);
 	}
 
-	mesh_data_map[md->id] = -1;
+	mesh_data_map[id] = -1;
 
 	mesh_data *delete_md = md;
 	if(mesh_data_count > 1 && mesh_data_count != idx + 1) {
@@ -250,46 +289,6 @@ i32 mesh_data_teardown() {
 	}
 
 	return err;
-}
-
-void mesh_draw(window_data *wd) {
-    glUseProgram(shaderProgram);
-	glBindVertexArray(VAO);
-
-	camera *c;
-
-	ASSERT(!camera_component_get(&wd->camera, &c), "camera not found for id [%d]\n", wd->camera.id);
-
-	GLuint transform_loc = glGetUniformLocation(shaderProgram, "transform");
-	GLuint projection_loc = glGetUniformLocation(shaderProgram, "projection");
-	GLuint view_loc = glGetUniformLocation(shaderProgram, "view");
-    glUniformMatrix4fv(projection_loc, 1, GL_TRUE, (GLfloat*)&wd->projection_m);
-	glUniformMatrix4fv(view_loc, 1, GL_TRUE, (GLfloat*)&c->m);
-
-	for(int i = 0; i < mesh_data_count; i++) {
-		mesh_data *md = mesh_datas + i;
-		ASSERT(md->id != -1, "mesh data id is -1\n");
-
-		glBindBuffer(GL_ARRAY_BUFFER, mesh_datas[i].VBO);
-
-		for(int j = 0; j < md->entity_count; j++) {
-			entity *e = md->entities + j;
-			ASSERT(e->id != -1, "mesh data id is -1\n");
-
-			transform *t = 0;
-			mesh *s = 0;
-			ASSERT(!transform_component_get(e, &t), "transform not found for id [%d]\n", e->id);
-			ASSERT(!mesh_component_get(mesh_datas[i].entities + j, &s), "transform not found for id [%d]\n", mesh_datas[i].entities[j].id);
-
-			glUniformMatrix4fv(transform_loc, 1, GL_TRUE, (GLfloat*)&t->m);
-
-			glDrawArrays(GL_TRIANGLES, 0, mesh_datas[i].vertex_count);
-		}
-
-		//glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
-
-	glBindVertexArray(0);
 }
 
 void mesh_data_print() {

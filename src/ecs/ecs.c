@@ -15,7 +15,7 @@ void entities_init() {
 
 int entity_create(entity *e) {
 	ASSERT(e, "entity is null");
-	ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
+	//ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
 
 	for(int i = 0; i < ENTITY_LIMIT; i++) {
 		if(entities[i].id == -1) {

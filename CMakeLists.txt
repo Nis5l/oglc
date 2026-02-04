@@ -29,3 +29,8 @@ add_library(glad ${GLAD_DIR}/src/glad.c)
 target_include_directories(glad PRIVATE ${GLAD_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${GLAD_DIR}/include)
 target_link_libraries(${PROJECT_NAME} glad)
+
+# stb_image
+set(STB_DIR lib/stb_image)
+add_subdirectory(${STB_DIR})
+target_link_libraries(${PROJECT_NAME} stb_image)

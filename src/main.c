@@ -4,14 +4,17 @@
 #include "def.h"
 #include "window.h"
 #include "time.h"
-#include "mesh_data.h"
+#include "render/mesh_data.h"
+#include "render/texture_data.h"
+#include "render/render_batch.h"
 #include "ecs/ecs.h"
 #include "ecs/components/transform.h"
 #include "ecs/components/mesh.h"
 #include "ecs/components/camera.h"
+#include "ecs/components/texture.h"
 #include "input.h"
 
-int create_test_entity(entity *e, i32 mesh_data_id) {
+int create_test_entity(entity *e, i32 md_id, i32 td_id) {
 	dprintf("creating entity\n");
 	if(entity_create(e)) {
 		eprintf("error creating entity\n");
@@ -37,10 +40,17 @@ int create_test_entity(entity *e, i32 mesh_data_id) {
 	t->scale.w = 1;
 
 	dprintf("create entity: creating mesh component\n");
-	if(mesh_component_add(e, mesh_data_id)) {
+	if(mesh_component_add(e, md_id)) {
 		eprintf("error adding mesh component\n");
 		return 1;
 	}
+
+	dprintf("create entity: creating texture component\n");
+	if(texture_component_add(e, td_id)) {
+		eprintf("error adding texture component\n");
+		return 1;
+	}
+	dprintf("TESTXX\n");
 
 	return 0;
 }
@@ -64,15 +74,22 @@ int main() {
 	entities_init();
 	dprintf("initializing mesh_data\n");
 	mesh_data_init();
+	dprintf("initializing texture_data\n");
+	texture_data_init();
+	dprintf("initializing render batches\n");
+	render_batch_init();
 	dprintf("initializing transform components\n");
 	transform_components_init();
 	dprintf("initializing mesh components\n");
 	mesh_components_init();
 	dprintf("initializing camera components\n");
 	camera_components_init();
+	dprintf("initializing texture components\n");
+	texture_components_init();
 
-	i32 triangle_mesh_id, square_mesh_id;
-	{
+	//i32 triangle_mesh_id, square_mesh_id;
+	i32 square_mesh_id;
+	/* {
 		dprintf("creating triangle mesh_data\n");
 		f32 vertices[] = {
 			-0.5f, -0.5f, 0.0f,
@@ -84,10 +101,10 @@ int main() {
 			eprintf("error creating mesh_data\n");
 			return 1;
 		}
-	}
+	} */
 	{
 		dprintf("creating square mesh_data\n");
-		f32 vertices[] = {
+		/* f32 vertices[] = {
 			-1.0f, -1.0f, 0.0f,
 			 1.0f, -1.0f, 0.0f,
 			 1.0f,  1.0f, 0.0f,
@@ -95,6 +112,17 @@ int main() {
 			-1.0f, -1.0f, 0.0f,
 			 1.0f,  1.0f, 0.0f,
 			-1.0f,  1.0f, 0.0f 
+		}; */
+
+		f32 vertices[] = {
+		//   x    y     z     u     v
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f
 		};
 		square_mesh_id = mesh_data_add(vertices, 6);
 		if(square_mesh_id == -1) {
@@ -103,17 +131,24 @@ int main() {
 		}
 	}
 
+	int ball_tex_id = texture_data_add("./resources/ball.png");
+	if(ball_tex_id < 0) {
+		eprintf("error adding texture\n");
+		return 1;
+	}
 
+	dprintf("TEST1\n");
 	entity e1, mouse_cursor_entity, player_entity;
-	if(create_test_entity(&e1, triangle_mesh_id)) {
+	if(create_test_entity(&e1, square_mesh_id, ball_tex_id)) {
 		eprintf("error creating test entity\n");
 		return 1;
 	}
-	if(create_test_entity(&mouse_cursor_entity, square_mesh_id)) {
+	dprintf("TEST2\n");
+	if(create_test_entity(&mouse_cursor_entity, square_mesh_id, ball_tex_id)) {
 		eprintf("error creating mouse cursor entity\n");
 		return 1;
 	}
-	if(create_test_entity(&player_entity, square_mesh_id)) {
+	if(create_test_entity(&player_entity, square_mesh_id, ball_tex_id)) {
 		eprintf("error creating player entity\n");
 		return 1;
 	}
@@ -138,9 +173,10 @@ int main() {
 	camera_component_get(&player_entity, &c);
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	i32 velocity = 1000;
-
 	game_clock gc;
 	if(game_clock_init(&gc)) {
 		eprintf("error initializing game clock\n");
@@ -182,10 +218,11 @@ int main() {
 		camera_update_matrices();
 		//transform_print_matrix(&e);
 
-		mesh_draw(window.data);
+		//mesh_draw(window.data);
+		render_batch_draw(window.data);
 
 		window_swap_buffers(&window);
-		window_poll_events(&window);
+		window_poll_events();
 
 		ASSERT(!game_clock_end(&gc), "game clock end error\n");
 
@@ -197,6 +234,12 @@ int main() {
 	
 	dprintf("tearing down mesh_data\n");
 	mesh_data_teardown();
+
+	dprintf("tearing down texture_data\n");
+	texture_data_teardown();
+
+	dprintf("tearing down render batch\n");
+	render_batch_teardown();
 
 	dprintf("tearing down window\n");
 	window_teardown(&window);
