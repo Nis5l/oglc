@@ -3,6 +3,6 @@
 
 #include "def.h"
 
-extern u32 gen_counter;
+extern uint gen_counter;
 
 #endif

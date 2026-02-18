@@ -5,7 +5,7 @@
 
 packed_array texture_pa;
 texture textures[ENTITY_LIMIT];
-i32 texture_entity_map[ENTITY_LIMIT];
+int texture_entity_map[ENTITY_LIMIT];
 
 void texture_components_init() {
     components_init(&texture_pa, textures, sizeof(texture), texture_entity_map, ENTITY_LIMIT);

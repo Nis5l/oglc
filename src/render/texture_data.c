@@ -6,13 +6,13 @@
 
 packed_array texture_datas_pa;
 texture_data texture_datas[TEXTURE_DATA_LIMIT] = {0};
-i32 texture_data_map[TEXTURE_DATA_LIMIT] = {0};
+int texture_data_map[TEXTURE_DATA_LIMIT] = {0};
 
 void texture_data_init() {
-    packed_array_init(&texture_datas_pa, texture_datas, sizeof(texture_data), TEXTURE_DATA_LIMIT, texture_data_map);
+    packed_array_init(&texture_datas_pa, texture_datas, sizeof(texture_data), TEXTURE_DATA_LIMIT, texture_data_map, 0, 0);
 }
 
-i32 texture_data_add(const char *path, texture_data_key *key) {
+int texture_data_add(const char *path, texture_data_key *key) {
 	ASSERT(path, "path is null\n");
 
 	if(texture_datas_pa.count == TEXTURE_DATA_LIMIT) {
@@ -26,7 +26,7 @@ i32 texture_data_add(const char *path, texture_data_key *key) {
 		return 2;
 	}
 
-	packed_array_init(&td->entities_pa, td->entities, sizeof(entity), TEXTURE_DATA_ENTITY_LIMIT, td->entity_map);
+	packed_array_init(&td->entities_pa, td->entities, sizeof(entity), TEXTURE_DATA_ENTITY_LIMIT, td->entity_map, 0, 0);
 
 	int width, height, channels;
 	unsigned char *data = stbi_load(path, &width, &height, &channels, 4);
@@ -51,7 +51,7 @@ i32 texture_data_add(const char *path, texture_data_key *key) {
 	return 0;
 }
 
-i32 texture_data_remove(texture_data_key key) {
+int texture_data_remove(texture_data_key key) {
 	ASSERT(key.id >= 0 && key.id < TEXTURE_DATA_LIMIT, "id [%d] not in range(0,%d)\n", key.id, TEXTURE_DATA_LIMIT);
 
 	texture_data *td = packed_array_get(&texture_datas_pa, key.id, key.gen);
@@ -62,7 +62,7 @@ i32 texture_data_remove(texture_data_key key) {
 
 	glDeleteTextures(1, &td->tex); 
 
-	i32 err = 0;
+	int err = 0;
 	//NOTE: deleted like this because the meshes unregister themseleves when removed
 	while(td->entities_pa.count > 0) err += texture_component_remove(td->entities + td->entities_pa.count - 1);
 
@@ -74,7 +74,7 @@ i32 texture_data_remove(texture_data_key key) {
 	return 0;
 }
 
-i32 texture_data_register_entity(texture_data_key key, const entity *e) {
+int texture_data_register_entity(texture_data_key key, const entity *e) {
 	texture_data *td = packed_array_get(&texture_datas_pa, key.id, key.gen);
 	if(!td) return 1;
 
@@ -86,14 +86,14 @@ i32 texture_data_register_entity(texture_data_key key, const entity *e) {
 	return 0;
 }
 
-i32 texture_data_unregister_entity(texture_data_key key, const entity *e) {
+int texture_data_unregister_entity(texture_data_key key, const entity *e) {
 	texture_data *td = packed_array_get(&texture_datas_pa, key.id, key.gen);
 	if(!td) return 1;
 
 	return packed_array_remove(&td->entities_pa, e->id, e->gen);
 }
 
-i32 texture_data_use(texture_data_key key) {
+int texture_data_use(texture_data_key key) {
 	texture_data *td = packed_array_get(&texture_datas_pa, key.id, key.gen);
 	if(!td) return 1;
 
@@ -102,8 +102,8 @@ i32 texture_data_use(texture_data_key key) {
 	return 0;
 }
 
-i32 texture_data_teardown() {
-	i32 err = 0;
+int texture_data_teardown() {
+	int err = 0;
 	while(texture_datas_pa.count > 0) err += texture_data_remove(texture_datas[texture_datas_pa.count - 1].key);
 	return err;
 }

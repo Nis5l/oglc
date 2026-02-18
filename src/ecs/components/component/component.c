@@ -4,8 +4,8 @@
 #include "./component.h"
 #include "../../../def.h"
 
-void components_init(packed_array *pa, void *components, size_t size, i32 *entity_map, u32 capacity) {
-    packed_array_init(pa, components, size, capacity, entity_map);
+void components_init(packed_array *pa, void *components, size_t size, int *entity_map, uint capacity) {
+    packed_array_init(pa, components, size, capacity, entity_map, 0, 0);
 }
 
 int component_add(packed_array *pa, const entity *e) {
@@ -38,7 +38,7 @@ int component_remove(packed_array *pa, const entity *e) {
 
 void component_entities_print(packed_array *pa) {
     dprintf("components:");
-    for(u32 i = 0; i < pa->count; i++) {
+    for(uint i = 0; i < pa->count; i++) {
         entity *e = (entity*)((uint8_t*)pa->data + i * pa->elem_size);
         printf(" [%d, %d]", e->id, e->gen);
     }

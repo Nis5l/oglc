@@ -4,7 +4,7 @@
 
 packed_array camera_pa;
 camera cameras[ENTITY_LIMIT];
-i32 camera_entity_map[ENTITY_LIMIT];
+int camera_entity_map[ENTITY_LIMIT];
 
 void camera_components_init() {
     components_init(&camera_pa, cameras, sizeof(camera), camera_entity_map, ENTITY_LIMIT);
@@ -52,7 +52,7 @@ int camera_component_remove(const entity *e) {
 }
 
 void camera_update_pos(f32 window_width, f32 window_height) {
-    for(u32 i = 0; i < camera_pa.count; i++) {
+    for(uint i = 0; i < camera_pa.count; i++) {
         camera *c = (camera*)((uint8_t*)camera_pa.data + i * camera_pa.elem_size);
         ASSERT(c->e.id != -1, "camera entity id is -1\n");
 
@@ -66,7 +66,7 @@ void camera_update_pos(f32 window_width, f32 window_height) {
 }
 
 void camera_update_matrices() {
-    for(u32 i = 0; i < camera_pa.count; i++) {
+    for(uint i = 0; i < camera_pa.count; i++) {
         camera *c = (camera*)((uint8_t*)camera_pa.data + i * camera_pa.elem_size);
         ASSERT(c->e.id != -1, "camera entity id is -1\n");
 

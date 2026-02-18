@@ -16,11 +16,11 @@ uint VAO;
 void mesh_data_init() {
     glGenVertexArrays(1, &VAO);
 
-    packed_array_init(&mesh_datas_pa, mesh_datas, sizeof(mesh_data), MESH_DATA_LIMIT, mesh_data_map);
+    packed_array_init(&mesh_datas_pa, mesh_datas, sizeof(mesh_data), MESH_DATA_LIMIT, mesh_data_map, 0, 0);
 
     for(int i = 0; i < mesh_datas_pa.capacity; i++) {
         mesh_data *md = &mesh_datas[i];
-        packed_array_init(&md->entities_pa, md->entities, sizeof(entity), MESH_DATA_ENTITY_LIMIT, md->entity_map);
+        packed_array_init(&md->entities_pa, md->entities, sizeof(entity), MESH_DATA_ENTITY_LIMIT, md->entity_map, 0, 0);
     }
 
 	//shader vertex
@@ -116,7 +116,7 @@ int mesh_data_add(const f32 *vertices, uint vertex_count, mesh_data_key *md_key)
         return 2;
     }
 
-	packed_array_init(&md->entities_pa, md->entities, sizeof(entity), MESH_DATA_ENTITY_LIMIT, md->entity_map);
+	packed_array_init(&md->entities_pa, md->entities, sizeof(entity), MESH_DATA_ENTITY_LIMIT, md->entity_map, 0, 0);
 	md->vertex_count = vertex_count;
     glGenBuffers(1, &md->VBO);
 
@@ -216,7 +216,6 @@ int mesh_data_unregister_entity(mesh_data_key key, const entity *e) {
     ASSERT(e, "entity is null\n");
     ASSERT(key.id >= 0 && key.id < MESH_DATA_LIMIT, "mesh_data id [%d] out of range\n", key.id);
 
-	dprintf("md unregister entity\n");
     mesh_data *md = packed_array_get(&mesh_datas_pa, key.id, key.gen);
     if(!md) {
         eprintf("mesh_data not found [id:%d gen:%d]\n", key.id, key.gen);

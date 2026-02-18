@@ -5,7 +5,7 @@
 
 packed_array transform_pa;
 transform transforms[ENTITY_LIMIT];
-i32 transform_entity_map[ENTITY_LIMIT];
+int transform_entity_map[ENTITY_LIMIT];
 
 void transform_components_init() {
     components_init(&transform_pa, transforms, sizeof(transform), transform_entity_map, ENTITY_LIMIT);
@@ -62,7 +62,7 @@ int transform_component_remove(const entity *e) {
 }
 
 void transform_update_matrices() {
-    for(u32 i = 0; i < transform_pa.count; i++) {
+    for(uint i = 0; i < transform_pa.count; i++) {
         transform *t = (transform*)((uint8_t*)transform_pa.data + i * transform_pa.elem_size);
         ASSERT(t->e.id != -1, "transform entity id is -1\n");
         m4_set_position(&t->m, &t->pos);

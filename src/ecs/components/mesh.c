@@ -5,7 +5,7 @@
 
 packed_array mesh_pa;
 mesh meshs[ENTITY_LIMIT];
-i32 meshs_entity_map[ENTITY_LIMIT];
+int meshs_entity_map[ENTITY_LIMIT];
 
 void mesh_components_init() {
     components_init(&mesh_pa, meshs, sizeof(mesh), meshs_entity_map, ENTITY_LIMIT);
@@ -44,14 +44,12 @@ int mesh_component_remove(const entity *e) {
     ASSERT(e, "entity is null");
     ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
 
-	dprintf("mesh component remove\n");
     mesh *m;
     if(mesh_component_get(e, &m)) {
         //eprintf("mesh for entity [id:%d, gen:%d] not found\n", e->id, e->gen);
         return 1;
     }
 
-	dprintf("mesh component remove unregister\n");
     if(mesh_data_unregister_entity(m->md_key, e)) return 2;
 
     ASSERT(!component_remove(&mesh_pa, e), "removing mesh for entity [id:%d, gen:%d] failed\n", e->id, e->gen);

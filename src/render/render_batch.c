@@ -7,16 +7,31 @@
 #include "./texture_data.h"
 #include "../gen.h"
 
-//TODO: SORT!!
 packed_array render_batches_pa;
 render_batch render_batches[RENDER_BATCH_LIMIT];
-i32 render_batch_map[RENDER_BATCH_LIMIT];
+int render_batch_map[RENDER_BATCH_LIMIT];
+int render_batches_sorted[RENDER_BATCH_LIMIT];
+
+int render_batch_cmp(const void *a, const void *b) {
+    const render_batch *ra = (const render_batch*)a;
+    const render_batch *rb = (const render_batch*)b;
+
+    if (ra->md_key.id != rb->md_key.id)
+        return ra->md_key.id - rb->md_key.id;
+    if (ra->md_key.gen != rb->md_key.gen)
+        return (int)(ra->md_key.gen - rb->md_key.gen);
+
+    if (ra->td_key.id != rb->td_key.id)
+        return ra->td_key.id - rb->td_key.id;
+    return (int)(ra->td_key.gen - rb->td_key.gen);
+}
 
 void render_batch_init() {
-    packed_array_init(&render_batches_pa, render_batches, sizeof(render_batch), RENDER_BATCH_LIMIT, render_batch_map);
+    packed_array_init(&render_batches_pa, render_batches, sizeof(render_batch), RENDER_BATCH_LIMIT, render_batch_map, render_batches_sorted, render_batch_cmp);
 }
+
 render_batch *render_batch_find(mesh_data_key md_key, texture_data_key td_key) {
-    for(u32 i = 0; i < render_batches_pa.count; i++) {
+    for(uint i = 0; i < render_batches_pa.count; i++) {
 		render_batch *rb = render_batches + i;
 
         if(rb->md_key.id == md_key.id && rb->md_key.gen == md_key.gen && rb->td_key.id == td_key.id && rb->td_key.gen == td_key.gen) return rb;
@@ -24,7 +39,7 @@ render_batch *render_batch_find(mesh_data_key md_key, texture_data_key td_key) {
     return 0;
 }
 
-i32 render_batch_check_add(const entity *e) {
+int render_batch_check_add(const entity *e) {
 	ASSERT(e, "e is null\n");
 
 	mesh *m = 0;
@@ -43,7 +58,7 @@ i32 render_batch_check_add(const entity *e) {
         rb->md_key = m->md_key;
         rb->td_key = tex->td_key;
 
-        packed_array_init(&rb->entities_pa, rb->entities, sizeof(entity), RENDER_BATCH_ENTITY_LIMIT, rb->entity_map);
+        packed_array_init(&rb->entities_pa, rb->entities, sizeof(entity), RENDER_BATCH_ENTITY_LIMIT, rb->entity_map, 0, 0);
 
         dprintf("created render batch [id:%d, gen:%d, md_id:%d, md_gen:%u, td_id:%d, td_gen:%u]\n", rb->key.id, rb->key.gen, m->md_key.id, m->md_key.gen, tex->td_key.id, tex->td_key.gen);
     }
@@ -57,10 +72,10 @@ i32 render_batch_check_add(const entity *e) {
 	return 0;
 }
 
-i32 render_batch_check_remove(const entity *e) {
+int render_batch_check_remove(const entity *e) {
 	ASSERT(e, "entity is null\n");
 
-    for(u32 i = 0; i < render_batches_pa.count; i++) {
+    for(uint i = 0; i < render_batches_pa.count; i++) {
 		render_batch *rb = render_batches + i;
 
         if(!packed_array_remove(&rb->entities_pa, e->id, e->gen)) {
@@ -78,7 +93,7 @@ i32 render_batch_check_remove(const entity *e) {
 	return 0;
 }
 
-i32 render_batch_teardown() {
+int render_batch_teardown() {
 	return 0;
 }
 
@@ -98,7 +113,7 @@ void render_batch_draw(window_data *wd) {
 	glUniformMatrix4fv(view_loc, 1, GL_TRUE, (GLfloat*)&c->m);
 
 	for(int i = 0; i < render_batches_pa.count; i++) {
-		render_batch *rb = render_batches + i;
+		render_batch *rb = packed_array_get_sorted(&render_batches_pa, i);
 
 		ASSERT(!mesh_data_use(rb->md_key), "mesh data use error\n");
 
