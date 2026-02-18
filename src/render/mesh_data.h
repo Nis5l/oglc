@@ -2,36 +2,40 @@
 #define __MESH_DATA_H__
 
 #include "../def.h"
-#include "../window.h"
 #include "../ecs/ecs.h"
+#include "../data/packed_array.h"
 
-#define MESH_DATA_LIMIT 128
-#define MESH_DATA_ENTITY_LIMIT 128
+#define MESH_DATA_LIMIT ENTITY_LIMIT
+#define MESH_DATA_ENTITY_LIMIT ENTITY_LIMIT
+
+typedef struct mesh_data_key {
+    i32 id;
+    u32 gen;
+} mesh_data_key;
 
 typedef struct mesh_data {
-	//TODO: maybe gen
-	i32 id;
+    mesh_data_key key;
 
-	u32 vertex_count;
-	u32 VBO;
+    u32 vertex_count;
+    u32 VBO;
 
-	u32 entity_count;
-	i32 entity_map[MESH_DATA_ENTITY_LIMIT];
-	entity entities[MESH_DATA_ENTITY_LIMIT];
+    packed_array entities_pa;
+    entity entities[MESH_DATA_ENTITY_LIMIT];
+    i32 entity_map[MESH_DATA_ENTITY_LIMIT];
 } mesh_data;
 
 void mesh_data_init();
-i32 mesh_data_add(const f32 *vertices, u32 vertex_count);
-i32 mesh_data_use(i32 md_id);
-int mesh_data_draw(i32 md_id);
-i32 mesh_data_remove(i32 id);
+i32 mesh_data_add(const f32 *vertices, u32 vertex_count, mesh_data_key *md_key);
+i32 mesh_data_use(mesh_data_key key);
+i32 mesh_data_draw(mesh_data_key key);
+i32 mesh_data_remove(mesh_data_key key);
+
+i32 mesh_data_register_entity(mesh_data_key key, const entity *e);
+i32 mesh_data_unregister_entity(mesh_data_key key, const entity *e);
+
 i32 mesh_data_teardown();
-i32 mesh_data_register_entity(i32 id, const entity *e);
-i32 mesh_data_unregister_entity(i32 id, const entity *e);
-//void mesh_draw(window_data *wd);
 void mesh_data_print();
 
-//TODO
 extern u32 shaderProgram;
 extern u32 VAO;
 

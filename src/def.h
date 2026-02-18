@@ -13,21 +13,23 @@
 #endif
 
 #ifdef DEBUG
-#define dprintf(fmt, ...) fprintf(stdout, "[%s:%s:%d]: " fmt, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
-#define eprintf(fmt, ...) fprintf(stderr, "[%s:%s:%d]: " fmt, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+#define dprintf(fmt, ...) { fprintf(stdout, "d:[%s:%s:%d]: " fmt, __FILE__, __func__, __LINE__, ##__VA_ARGS__); fflush(stdout); }
+#define eprintf(fmt, ...) { fprintf(stderr, "e:[%s:%s:%d]: " fmt, __FILE__, __func__, __LINE__, ##__VA_ARGS__); fflush(stderr); }
 #elif
 #define dprintf (void)0
 #define eprintf (void)0
 #endif
 
-#define i32 int
-#define i64 long int
+typedef unsigned int uint;
 
-#define u32 unsigned int
-#define u64 unsigned long int
+typedef int32_t  i32;
+typedef int64_t  i64;
 
-#define u8 uint8_t
+typedef uint32_t u32;
+typedef uint64_t u64;
+typedef uint8_t  u8;
 
-#define f32 float
-#define f64 double
+typedef float  f32;
+typedef double f64;
+
 #endif

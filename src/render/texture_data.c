@@ -1,53 +1,38 @@
-#include <string.h>
-#include <glad/glad.h>
-#include "../ecs/components/texture.h"
-#include "texture_data.h"
 #include "stb_image.h"
 
-//TODO: abstract?
+#include "./texture_data.h"
+#include "../ecs/components/texture.h"
+#include "../gen.h"
+
+packed_array texture_datas_pa;
 texture_data texture_datas[TEXTURE_DATA_LIMIT] = {0};
-i32 texture_data_map[ENTITY_LIMIT] = {0};
-u32 texture_data_count = 0;
+i32 texture_data_map[TEXTURE_DATA_LIMIT] = {0};
 
 void texture_data_init() {
-	texture_data_count = 0;
-	for(int i = 0; i < TEXTURE_DATA_LIMIT; i++) {
-		texture_datas[i].id = -1;
-		texture_datas[i].width = -1;
-		texture_datas[i].height = -1;
-		texture_datas[i].tex = -1;
-		texture_datas[i].entity_count = 0;
-		texture_data_map[i] = -1;
-		for(int j = 0; j < TEXTURE_DATA_ENTITY_LIMIT; j++) {
-			texture_datas[i].entity_map[j] = -1;
-			texture_datas[i].entities[j].id = -1;
-			texture_datas[i].entities[j].gen = -1;
-		}
-	}
+    packed_array_init(&texture_datas_pa, texture_datas, sizeof(texture_data), TEXTURE_DATA_LIMIT, texture_data_map);
 }
 
-i32 texture_data_add(const char *path) {
+i32 texture_data_add(const char *path, texture_data_key *key) {
 	ASSERT(path, "path is null\n");
 
-	if(texture_data_count == TEXTURE_DATA_LIMIT) {
-		eprintf("texture_data is full\n");
-		return -1;
+	if(texture_datas_pa.count == TEXTURE_DATA_LIMIT) {
+		eprintf("texture data is full\n");
+		return 1;
 	}
 
-	int idx = texture_data_count;
-	texture_data *td = texture_datas + idx;
-	ASSERT(td->id == -1, "texture data id should be -1\n");
-	td->id = idx;
-	//TODO: is this even right, same for mesh?
-	texture_data_map[idx] = idx;
+	texture_data *td = packed_array_add(&texture_datas_pa, texture_datas_pa.count, gen_counter++);
+	if(!td) {
+		eprintf("texture data packed array add failed\n");
+		return 2;
+	}
 
-	texture_data_count++;
+	packed_array_init(&td->entities_pa, td->entities, sizeof(entity), TEXTURE_DATA_ENTITY_LIMIT, td->entity_map);
 
 	int width, height, channels;
-	unsigned char* data = stbi_load(path, &width, &height, &channels, 4);
+	unsigned char *data = stbi_load(path, &width, &height, &channels, 4);
 	if(!data) {
-		eprintf("error loading image %s\n", path);
-		return -1;
+		eprintf("texture data error loading image %s\n", path);
+		return 3;
 	}
 
 	glGenTextures(1, &td->tex);
@@ -60,135 +45,65 @@ i32 texture_data_add(const char *path) {
 
     td->width = width;
     td->height = height;
+	dprintf("registered texture data [path:%s, id:%d, gen:%d, widht:%d, height:%d]\n", path, td->key.id, td->key.gen, width, height);
 
-	return td->id;
+	*key = td->key;
+	return 0;
 }
 
-i32 texture_data_remove(i32 id) {
-	ASSERT(id >= 0 && id < TEXTURE_DATA_LIMIT, "id [%d] not in range(0,%d)\n", id, TEXTURE_DATA_LIMIT);
+i32 texture_data_remove(texture_data_key key) {
+	ASSERT(key.id >= 0 && key.id < TEXTURE_DATA_LIMIT, "id [%d] not in range(0,%d)\n", key.id, TEXTURE_DATA_LIMIT);
 
-	int idx = texture_data_map[id];
-	if(idx == -1) {
-		eprintf("no texture_data with id [%d]\n", id);
+	texture_data *td = packed_array_get(&texture_datas_pa, key.id, key.gen);
+	if(!td) {
+		eprintf("no texture_data with [id:%d, gen:%d]\n", key.id, key.gen);
 		return 1;
 	}
-
-	texture_data *td = texture_datas + idx;
-	ASSERT(td->id != -1, "no texture_data with id [%d]\n", id);
 
 	glDeleteTextures(1, &td->tex); 
 
 	i32 err = 0;
 	//NOTE: deleted like this because the meshes unregister themseleves when removed
-	while(td->entity_count > 0) {
-		entity e = td->entities[0];
+	while(td->entities_pa.count > 0) err += texture_component_remove(td->entities + td->entities_pa.count - 1);
 
-		err += texture_component_remove(&e);
+	if(packed_array_remove(&texture_datas_pa, key.id, key.gen)) {
+		eprintf("failed to remove texture_data [id:%d, gen:%d]\n", key.id, key.gen);
+		return 1;
 	}
-
-	texture_data_map[id] = -1;
-
-	texture_data *delete_td = td;
-	if(texture_data_count > 1 && texture_data_count != idx + 1) {
-		delete_td = texture_datas + texture_data_count - 1;
-		ASSERT(delete_td->id != -1, "last entity does not exist\n");
-
-		texture_data_map[delete_td->id] = idx;
-		memcpy(td, delete_td, sizeof(texture_data));
-	}
-
-	delete_td->id = -1;
-	delete_td->tex = -1;
-	delete_td->width = -1;
-	delete_td->height = -1;
-
-	texture_data_count--;
 
 	return 0;
 }
 
-i32 texture_data_register_entity(i32 id, const entity *e) {
-	ASSERT(id >= 0 && id < TEXTURE_DATA_LIMIT, "id [%d] not in range(0,%d)\n", id, TEXTURE_DATA_LIMIT);
+i32 texture_data_register_entity(texture_data_key key, const entity *e) {
+	texture_data *td = packed_array_get(&texture_datas_pa, key.id, key.gen);
+	if(!td) return 1;
 
-	int idx = texture_data_map[id];
-	if(idx == -1) {
-		eprintf("no mesh_data with id [%d]\n", id);
+	if(!packed_array_add(&td->entities_pa, e->id, e->gen)) {
+		eprintf("texture_data entities full or already contains entity [%d]\n", e->id);
 		return 1;
 	}
-
-	texture_data *td = texture_datas + idx;
-	ASSERT(td->id != -1, "no texture_data with id [%d]\n", id);
-
-	if(td->entity_count == TEXTURE_DATA_ENTITY_LIMIT) {
-		eprintf("texture_data entities full [%d]\n", id);
-		return 1;
-	}
-
-	int i = td->entity_count;
-	td->entities[i].id = e->id;
-	td->entities[i].gen = e->gen;
-	td->entity_map[e->id] = i;
-	td->entity_count++;
 
 	return 0;
 }
 
-i32 texture_data_unregister_entity(i32 id, const entity *e) {
-	ASSERT(id >= 0 && id < TEXTURE_DATA_LIMIT, "id [%d] not in range(0,%d)\n", id, TEXTURE_DATA_LIMIT);
+i32 texture_data_unregister_entity(texture_data_key key, const entity *e) {
+	texture_data *td = packed_array_get(&texture_datas_pa, key.id, key.gen);
+	if(!td) return 1;
 
-	int idx = texture_data_map[id];
-	if(idx == -1) {
-		eprintf("no texture_data with id [%d]\n", id);
-		return 1;
-	}
+	return packed_array_remove(&td->entities_pa, e->id, e->gen);
+}
 
-	texture_data *td = texture_datas + idx;
-	ASSERT(td->id != -1, "no texture_data with id [%d]\n", id);
+i32 texture_data_use(texture_data_key key) {
+	texture_data *td = packed_array_get(&texture_datas_pa, key.id, key.gen);
+	if(!td) return 1;
 
-	int entity_idx = td->entity_map[e->id];
-	if(entity_idx == -1) {
-		eprintf("entity not found [%d] [%d]\n", entity_idx, e->id);
-		return 1;
-	}
-
-	entity *entity_delete = td->entities + entity_idx;
-	ASSERT(entity_delete->id == e->id && entity_delete->gen == e->gen, "entity id or gen dont match [%d %d] [%d %d]\n", entity_delete->id, entity_delete->gen, e->id, e->gen);
-
-	if(td->entity_count > 1 && td->entity_count != entity_idx + 1) {
-		entity_delete = td->entities + td->entity_count - 1;
-		ASSERT(entity_delete->id != -1, "last entity does not exist\n");
-
-		td->entity_map[entity_delete->id] = idx;
-		memcpy(td->entities + entity_idx, entity_delete, sizeof(entity));
-	}
-
-	entity_delete->id = -1;
-	entity_delete->gen = -1;
-	td->entity_count--;
-
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, td->tex);
 	return 0;
 }
 
 i32 texture_data_teardown() {
 	i32 err = 0;
-	int i = 0;
-	while(texture_data_count > 0 && i++ < 5) {
-		err += texture_data_remove(texture_datas[0].id);
-	}
-
+	while(texture_datas_pa.count > 0) err += texture_data_remove(texture_datas[texture_datas_pa.count - 1].key);
 	return err;
-}
-
-i32 texture_data_use(i32 md_id) {
-	ASSERT(md_id >= 0 && md_id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", md_id, TEXTURE_DATA_LIMIT);
-
-	i32 idx = texture_data_map[md_id];
-	if(idx == -1) return 1;
-
-	texture_data *td = texture_datas + idx;
-	ASSERT(td->id != -1, "texture data id not set\n");
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, td->tex);
-
-	return 0;
 }

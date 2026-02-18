@@ -1,25 +1,27 @@
 #include <stdio.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "def.h"
-#include "window.h"
-#include "time.h"
-#include "render/mesh_data.h"
-#include "render/texture_data.h"
-#include "render/render_batch.h"
-#include "ecs/ecs.h"
-#include "ecs/components/transform.h"
-#include "ecs/components/mesh.h"
-#include "ecs/components/camera.h"
-#include "ecs/components/texture.h"
-#include "input.h"
 
-int create_test_entity(entity *e, i32 md_id, i32 td_id) {
-	dprintf("creating entity\n");
+#include "./def.h"
+#include "./window.h"
+#include "./time.h"
+#include "./input.h"
+#include "./render/mesh_data.h"
+#include "./render/texture_data.h"
+#include "./render/render_batch.h"
+#include "./ecs/ecs.h"
+#include "./ecs/components/transform.h"
+#include "./ecs/components/mesh.h"
+#include "./ecs/components/camera.h"
+#include "./ecs/components/texture.h"
+
+int create_test_entity(entity *e, mesh_data_key md_key, texture_data_key td_key) {
+	dprintf("creating test entity...\n");
 	if(entity_create(e)) {
 		eprintf("error creating entity\n");
 		return 1;
 	}
+	dprintf("created test entity [id:%d, gen:%d]\n", e->id, e->gen);
 
 	dprintf("create entity: creating transform component\n");
 	if(transform_component_add(e)) {
@@ -39,18 +41,18 @@ int create_test_entity(entity *e, i32 md_id, i32 td_id) {
 	t->scale.z = 100;
 	t->scale.w = 1;
 
+
 	dprintf("create entity: creating mesh component\n");
-	if(mesh_component_add(e, md_id)) {
+	if(mesh_component_add(e, md_key)) {
 		eprintf("error adding mesh component\n");
 		return 1;
 	}
 
 	dprintf("create entity: creating texture component\n");
-	if(texture_component_add(e, td_id)) {
+	if(texture_component_add(e, td_key)) {
 		eprintf("error adding texture component\n");
 		return 1;
 	}
-	dprintf("TESTXX\n");
 
 	return 0;
 }
@@ -87,68 +89,47 @@ int main() {
 	dprintf("initializing texture components\n");
 	texture_components_init();
 
-	//i32 triangle_mesh_id, square_mesh_id;
-	i32 square_mesh_id;
-	/* {
-		dprintf("creating triangle mesh_data\n");
-		f32 vertices[] = {
-			-0.5f, -0.5f, 0.0f,
-			 0.5f, -0.5f, 0.0f,
-			 0.0f,  0.5f, 0.0f
-		};
-		triangle_mesh_id = mesh_data_add(vertices, 3);
-		if(triangle_mesh_id == -1) {
-			eprintf("error creating mesh_data\n");
-			return 1;
-		}
-	} */
-	{
-		dprintf("creating square mesh_data\n");
-		/* f32 vertices[] = {
-			-1.0f, -1.0f, 0.0f,
-			 1.0f, -1.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f,
+	mesh_data_key square_mesh_key;
+	dprintf("creating square mesh_data\n");
 
-			-1.0f, -1.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f,
-			-1.0f,  1.0f, 0.0f 
-		}; */
+	f32 vertices[] = {
+	//   x    y     z     u     v
+		-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+		 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
 
-		f32 vertices[] = {
-		//   x    y     z     u     v
-			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-
-			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f
-		};
-		square_mesh_id = mesh_data_add(vertices, 6);
-		if(square_mesh_id == -1) {
-			eprintf("error creating mesh_data\n");
-			return 1;
-		}
+		-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+		 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+		-1.0f,  1.0f, 0.0f, 0.0f, 1.0f
+	};
+	if(mesh_data_add(vertices, 6, &square_mesh_key)) {
+		eprintf("error creating mesh_data\n");
+		return 1;
 	}
 
-	int ball_tex_id = texture_data_add("./resources/ball.png");
-	if(ball_tex_id < 0) {
+	texture_data_key ball_tex_key, box_tex_key;
+	if(texture_data_add("./resources/ball.png", &ball_tex_key)) {
 		eprintf("error adding texture\n");
 		return 1;
 	}
 
-	dprintf("TEST1\n");
+	;
+	if(texture_data_add("./resources/box.png", &box_tex_key)) {
+		eprintf("error adding texture\n");
+		return 1;
+	}
+
 	entity e1, mouse_cursor_entity, player_entity;
-	if(create_test_entity(&e1, square_mesh_id, ball_tex_id)) {
+	if(create_test_entity(&e1, square_mesh_key, box_tex_key)) {
 		eprintf("error creating test entity\n");
 		return 1;
 	}
-	dprintf("TEST2\n");
-	if(create_test_entity(&mouse_cursor_entity, square_mesh_id, ball_tex_id)) {
+
+	if(create_test_entity(&mouse_cursor_entity, square_mesh_key, ball_tex_key)) {
 		eprintf("error creating mouse cursor entity\n");
 		return 1;
 	}
-	if(create_test_entity(&player_entity, square_mesh_id, ball_tex_id)) {
+	if(create_test_entity(&player_entity, square_mesh_key, ball_tex_key)) {
 		eprintf("error creating player entity\n");
 		return 1;
 	}
@@ -175,8 +156,16 @@ int main() {
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	const int balls_limit = 100;
+	entity balls[balls_limit];
+
+	for(int i = 0; i < balls_limit; i++) {
+		balls[i].id = -1;
+		balls[i].gen = -1;
+	}
 	
-	i32 velocity = 1000;
+	int velocity = 1000;
 	game_clock gc;
 	if(game_clock_init(&gc)) {
 		eprintf("error initializing game clock\n");
@@ -213,6 +202,37 @@ int main() {
 		mouse cursor_pos = camera_get_relative_mouse_pos(&player_entity, &window.data->input.mouse, window.data->width, window.data->height);
 		mouse_cursor_transform->pos.x = cursor_pos.mouse_x;
 		mouse_cursor_transform->pos.y = cursor_pos.mouse_y;
+
+		if(input_is_key_pressed(&window.data->input, GLFW_KEY_SPACE)) {
+			for(int i = 0; i < balls_limit; i++) {
+				if(balls[i].id == -1) {
+					if(create_test_entity(balls + i, square_mesh_key, ball_tex_key)) {
+						eprintf("error creating test entity\n");
+						return 1;
+					}
+					transform *t;
+					ASSERT(!transform_component_get(balls + i, &t), "error getting transform\n");
+					t->pos.x = cursor_pos.mouse_x;
+					t->pos.y = cursor_pos.mouse_y;
+					break;
+				}
+			}
+		}
+
+		for(int i = 0; i < balls_limit; i++) {
+			if(balls[i].id != -1) {
+				transform *t;
+				ASSERT(!transform_component_get(balls + i, &t), "error getting transform\n");
+				t->scale.x = t->scale.x - 100 * gc.dt;
+				t->scale.y = t->scale.y - 100 * gc.dt;
+
+				if(t->scale.x <= 0 || t->scale.y <= 0) {
+					entity_delete(balls + i);
+					balls[i].id = -1;
+					balls[i].gen = -1;
+				}
+			}
+		}
 
 		transform_update_matrices();
 		camera_update_matrices();

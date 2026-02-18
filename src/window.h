@@ -10,8 +10,8 @@ typedef struct window_data {
     m4 projection_m;
 	input input;
 	entity camera;
-	i32 width;
-	i32 height;
+	uint width;
+	uint height;
 } window_data;
 
 typedef struct window {

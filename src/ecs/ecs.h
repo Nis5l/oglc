@@ -5,8 +5,8 @@
 #include "../def.h"
 
 typedef struct entity {
-	i32 id;
-	u32 gen;
+	int id;
+	uint gen;
 } entity;
 
 

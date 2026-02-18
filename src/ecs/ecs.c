@@ -1,9 +1,10 @@
-#include <stdlib.h>
-#include "ecs.h"
-#include "components/transform.h"
-#include "components/mesh.h"
+#include "./ecs.h"
+#include "./components/texture.h"
+#include "./components/transform.h"
+#include "./components/mesh.h"
+#include "./components/camera.h"
+#include "../gen.h"
 
-u32 gen_counter = 0;
 entity entities[ENTITY_LIMIT];
 
 void entities_init() {
@@ -34,7 +35,7 @@ int entity_delete(const entity *e) {
 	ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
 
 	if(entities[e->id].id != e->id || entities[e->id].gen != e->gen) {
-		eprintf("no entity with id or gen doesnt match [%d]\n", e->id);
+		eprintf("no entity with id or gen doesnt match [id:%d, gen:%d]\n", e->id, e->gen);
 		return 1;
 	}
 
@@ -42,12 +43,14 @@ int entity_delete(const entity *e) {
 	int component_delete_err = 0;
 	component_delete_err += transform_component_remove(e);
 	component_delete_err += mesh_component_remove(e);
+	component_delete_err += camera_component_remove(e);
+	component_delete_err += texture_component_remove(e);
 
 	entities[e->id].id = -1;
 	entities[e->id].gen = 0;
 
 	if(component_delete_err) {
-		eprintf("error deleting componenents for entity [%d]\n", e->id);
+		//eprintf("error deleting componenents for entity [id:%d, gen:%d]\n", e->id, e->gen);
 		return 2;
 	}
 	return 0;
