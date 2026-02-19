@@ -48,8 +48,7 @@ int shader_data_add(const char *vertex_shader_path, const char *fragment_shader_
 		glShaderSource(vertex_shader, 1, (const char * const *)&vertex_shader_source, NULL);
 		glCompileShader(vertex_shader);
 
-		//TODO
-		//free(vertex_shader_source);
+		free(vertex_shader_source);
 
 		int success;
 		char infoLog[512];
@@ -70,8 +69,7 @@ int shader_data_add(const char *vertex_shader_path, const char *fragment_shader_
 		glShaderSource(fragment_shader, 1, (const char * const *)&fragment_shader_source, NULL);
 		glCompileShader(fragment_shader);
 
-		//TODO
-		//free(fragment_shader_source);
+		free(fragment_shader_source);
 
 		int  success;
 		char infoLog[512];

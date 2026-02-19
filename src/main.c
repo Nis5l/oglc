@@ -201,22 +201,22 @@ int main() {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		if(input_is_key_pressed(&window.data->input, GLFW_KEY_Q)) {
+		if(input_is_key_down(&window.data->input, GLFW_KEY_Q)) {
 			player_transform->pos.z = player_transform->pos.z - velocity * gc.dt;
 		}
-		if(input_is_key_pressed(&window.data->input, GLFW_KEY_E)) {
+		if(input_is_key_down(&window.data->input, GLFW_KEY_E)) {
 			player_transform->pos.z = player_transform->pos.z + velocity * gc.dt;
 		}
-		if(input_is_key_pressed(&window.data->input, GLFW_KEY_W)) {
+		if(input_is_key_down(&window.data->input, GLFW_KEY_W)) {
 			player_transform->pos.y = player_transform->pos.y + velocity * gc.dt;
 		}
-		if(input_is_key_pressed(&window.data->input, GLFW_KEY_S)) {
+		if(input_is_key_down(&window.data->input, GLFW_KEY_S)) {
 			player_transform->pos.y = player_transform->pos.y - velocity * gc.dt;
 		}
-		if(input_is_key_pressed(&window.data->input, GLFW_KEY_A)) {
+		if(input_is_key_down(&window.data->input, GLFW_KEY_A)) {
 			player_transform->pos.x = player_transform->pos.x - velocity * gc.dt;
 		}
-		if(input_is_key_pressed(&window.data->input, GLFW_KEY_D)) {
+		if(input_is_key_down(&window.data->input, GLFW_KEY_D)) {
 			player_transform->pos.x = player_transform->pos.x + velocity * gc.dt;
 		}
 
@@ -227,6 +227,7 @@ int main() {
 		mouse_cursor_transform->pos.y = cursor_pos.mouse_y;
 
 		if(input_is_key_pressed(&window.data->input, GLFW_KEY_SPACE)) {
+			dprintf("click\n");
 			for(int i = 0; i < balls_limit; i++) {
 				if(balls[i].id == -1) {
 					if(create_test_entity(balls + i, default_shader_key, square_mesh_key, ball_tex_key)) {
@@ -265,10 +266,10 @@ int main() {
 		render_batch_draw(window.data);
 
 		window_swap_buffers(&window);
+		input_key_update(&window.data->input);
 		window_poll_events();
 
 		ASSERT(!game_clock_end(&gc), "game clock end error\n");
-
 		//printf("FPS: %.2f\n", 1.0 / gc.dt);
 	}
 

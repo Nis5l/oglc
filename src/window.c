@@ -25,8 +25,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if(mods) return;
 
 	switch(action) {
-		case GLFW_PRESS:
-		case GLFW_REPEAT: {
+		case GLFW_PRESS: {
 			input_set_key_pressed(&data->input, key);
 		} break;
 		case GLFW_RELEASE: {
