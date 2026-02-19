@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <glad/glad.h>
 #include "window.h"
+#include "GLFW/glfw3.h"
 #include "def.h"
 #include "input.h"
 
@@ -30,6 +31,23 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		} break;
 		case GLFW_RELEASE: {
 			input_set_key_released(&data->input, key);
+		} break;
+	}
+}
+
+void mouse_callback(GLFWwindow* window, int button, int action, int mods) {
+	ASSERT(window, "window is null");
+
+	window_data* data = (window_data*)glfwGetWindowUserPointer(window);
+
+	if(mods) return;
+
+	switch(action) {
+		case GLFW_PRESS: {
+			input_set_key_pressed(&data->input, button);
+		} break;
+		case GLFW_RELEASE: {
+			input_set_key_released(&data->input, button);
 		} break;
 	}
 }
@@ -86,6 +104,7 @@ int window_init(window *window) {
 	glViewport(0, 0, window->data->width, window->data->height);
 	glfwSetFramebufferSizeCallback(window->window, framebuffer_size_callback);
 	glfwSetKeyCallback(window->window, key_callback);
+	glfwSetMouseButtonCallback(window->window, mouse_callback);
 	glfwSetCursorPosCallback(window->window, cursor_position_callback);
 
 	return 0;

@@ -226,7 +226,7 @@ int main() {
 		mouse_cursor_transform->pos.x = cursor_pos.mouse_x;
 		mouse_cursor_transform->pos.y = cursor_pos.mouse_y;
 
-		if(input_is_key_pressed(&window.data->input, GLFW_KEY_SPACE)) {
+		if(input_is_key_pressed(&window.data->input, GLFW_KEY_SPACE) || input_is_key_pressed(&window.data->input, GLFW_MOUSE_BUTTON_1)) {
 			dprintf("click\n");
 			for(int i = 0; i < balls_limit; i++) {
 				if(balls[i].id == -1) {
