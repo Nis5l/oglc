@@ -26,11 +26,6 @@ typedef struct shader_data {
     shader_data_key key;
 
 	uint shaderProgram;
-	uint VAO;
-
-    packed_array mesh_data_pa;
-    mesh_data_key mesh_datas[SHADER_DATA_MESH_DATA_LIMIT];
-    int mesh_data_map[SHADER_DATA_MESH_DATA_LIMIT];
 
     packed_array entities_pa;
     entity entities[SHADER_DATA_ENTITY_LIMIT];
@@ -41,12 +36,6 @@ void shader_data_init();
 int shader_data_add(const char *vertex_shader_path, const char *fragment_shader_path, shader_data_key *key);
 int shader_data_remove(shader_data_key key);
 int shader_data_use(shader_data_key key, shader_uniforms *uniforms);
-
-int shader_data_bind_vertex_array(shader_data_key key);
-int shader_data_register_mesh_data(shader_data_key key, mesh_data_key md_key);
-int shader_data_unregister_mesh_data(shader_data_key key, mesh_data_key md_key);
-
-int shader_data_has_mesh_data(shader_data_key key, mesh_data_key md_key);
 
 int shader_data_register_entity(shader_data_key key, const entity *e);
 int shader_data_unregister_entity(shader_data_key key, const entity *e);

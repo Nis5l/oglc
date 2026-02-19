@@ -125,14 +125,7 @@ int main() {
 		 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
 		-1.0f,  1.0f, 0.0f, 0.0f, 1.0f
 	};
-	if(mesh_data_add(vertices, 6, default_shader_key, &square_mesh_key)) {
-		eprintf("error creating mesh_data\n");
-		return 1;
-	}
-
-	mesh_data_key square_mesh_wave_key;
-	dprintf("creating square wave mesh_data\n");
-	if(mesh_data_add(vertices, 6, wave_test_shader_key, &square_mesh_wave_key)) {
+	if(mesh_data_add(vertices, 6, &square_mesh_key)) {
 		eprintf("error creating mesh_data\n");
 		return 1;
 	}
@@ -150,7 +143,7 @@ int main() {
 	}
 
 	entity e1, mouse_cursor_entity, player_entity;
-	if(create_test_entity(&e1, wave_test_shader_key, square_mesh_wave_key, box_tex_key)) {
+	if(create_test_entity(&e1, wave_test_shader_key, square_mesh_key, box_tex_key)) {
 		eprintf("error creating test entity\n");
 		return 1;
 	}

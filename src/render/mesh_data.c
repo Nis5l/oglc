@@ -2,7 +2,6 @@
 #include <glad/glad.h>
 
 #include "./mesh_data.h"
-#include "./shader_data.h"
 #include "../ecs/components/mesh.h"
 #include "../gen.h"
 
@@ -19,7 +18,7 @@ void mesh_data_init() {
     }
 }
 
-int mesh_data_add(const f32 *vertices, uint vertex_count, shader_data_key sd_key, mesh_data_key *md_key) {
+int mesh_data_add(const f32 *vertices, uint vertex_count, mesh_data_key *md_key) {
 	ASSERT(vertices, "vertices is null\n");
 	ASSERT(vertex_count > 0, "vertiex count <= 0\n");
 
@@ -28,28 +27,18 @@ int mesh_data_add(const f32 *vertices, uint vertex_count, shader_data_key sd_key
         return 1;
     }
 
-	if(shader_data_bind_vertex_array(sd_key)) return 2;
-
 	mesh_data *md = packed_array_add(&mesh_datas_pa, mesh_datas_pa.count, gen_counter++);
     if(!md) {
         eprintf("mesh data packed array add failed\n");
         return 3;
     }
 
-	if(shader_data_register_mesh_data(sd_key, md->key)) {
-        eprintf("registering mesh data in shader data failed\n");
-		if(packed_array_remove(&mesh_datas_pa, md->key.id, md->key.gen)) {
-			eprintf("removing mesh data from packed array failed\n");
-			return 4;
-		}
-		return 5;
-	}
-
 	packed_array_init(&md->entities_pa, md->entities, sizeof(entity), MESH_DATA_ENTITY_LIMIT, md->entity_map, 0, 0);
 	md->vertex_count = vertex_count;
-    glGenBuffers(1, &md->VBO);
+    glGenVertexArrays(1, &md->VAO);
+	glBindVertexArray(md->VAO);
 
-	md->sd_key = sd_key;
+    glGenBuffers(1, &md->VBO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, md->VBO);
 	glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(f32) * 5 /*x y z u v*/, vertices, GL_STATIC_DRAW);
@@ -64,7 +53,7 @@ int mesh_data_add(const f32 *vertices, uint vertex_count, shader_data_key sd_key
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	dprintf("registered mesh data [id:%d, gen:%d, vc:%d]\n", md->key.id, md->key.gen, vertex_count);
+	dprintf("registered mesh data [id:%d, gen:%d, vc:%d, VAO:%d, VBO:%d]\n", md->key.id, md->key.gen, vertex_count, md->VAO, md->VBO);
 
 	*md_key = md->key;
 	return 0;
@@ -76,6 +65,7 @@ int mesh_data_use(mesh_data_key key) {
     mesh_data *md = packed_array_get(&mesh_datas_pa, key.id, key.gen);
     if(!md) return 1;
 
+	glBindVertexArray(md->VAO);
     glBindBuffer(GL_ARRAY_BUFFER, md->VBO);
 
     return 0;
@@ -101,15 +91,7 @@ int mesh_data_remove(mesh_data_key key) {
         return 1;
     }
 
-	if(shader_data_unregister_mesh_data(md->sd_key, md->key)) {
-        eprintf("unregistering mesh data in shader data failed\n");
-		if(packed_array_remove(&mesh_datas_pa, md->key.id, md->key.gen)) {
-			eprintf("removing mesh data from packed array failed\n");
-			return 2;
-		}
-		return 3;
-	}
-
+    glDeleteVertexArrays(1, &md->VAO);
     glDeleteBuffers(1, &md->VBO);
 
     int err = 0;
@@ -167,18 +149,6 @@ int mesh_data_unregister_entity(mesh_data_key key, const entity *e) {
 
 	dprintf("unregistered entity [id:%d gen:%d] from mesh_data [id:%d gen:%d]\n", e->id, e->gen, md->key.id, md->key.gen);
 	return 0;
-}
-
-int mesh_data_is_shader_data(mesh_data_key key, shader_data_key sd_key) {
-    ASSERT(key.id >= 0 && key.id < MESH_DATA_LIMIT, "mesh_data id [%d] out of range\n", key.id);
-
-    mesh_data *md = packed_array_get(&mesh_datas_pa, key.id, key.gen);
-    if(!md) {
-        eprintf("mesh_data not found [id:%d gen:%d]\n", key.id, key.gen);
-        return 0;
-    }
-
-	return md->sd_key.id == sd_key.id && md->sd_key.gen == sd_key.gen;
 }
 
 int mesh_data_teardown() {

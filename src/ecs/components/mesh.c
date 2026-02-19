@@ -1,5 +1,4 @@
 #include "./mesh.h"
-#include "./shader.h"
 #include "./component/component.h"
 #include "../../render/mesh_data.h"
 #include "../../render/render_batch.h"
@@ -23,14 +22,6 @@ int mesh_component_get(const entity *e, mesh **m_ret) {
 int mesh_component_add(const entity *e, mesh_data_key md_key) {
     ASSERT(e, "entity is null\n");
     ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
-
-	shader *s;
-	if(!shader_component_get(e, &s)) {
-		if(!mesh_data_is_shader_data(md_key, s->sd_key)) {
-			eprintf("mesh component shader data does not match shader component shader data\n");
-			return 1;
-		}
-	}
 
     if(component_add(&mesh_pa, e)) {
         eprintf("adding mesh failed\n");
