@@ -274,7 +274,10 @@ int main() {
 	}
 
 
-	//TODO: entity teardown
+	//TODO: returns dont really indicate success
+	dprintf("tearing down entities\n");
+	entity_teardown();
+
 	dprintf("tearing down shader_data\n");
 	shader_data_teardown();
 
@@ -292,5 +295,6 @@ int main() {
 
 	dprintf("terminating glfw\n");
 	glfwTerminate();
+
 	return 0;
 }

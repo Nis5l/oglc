@@ -105,36 +105,52 @@ void render_batch_draw(window_data *wd) {
 	camera *c;
 	ASSERT(!camera_component_get(&wd->camera, &c), "camera not found for id [%d]\n", wd->camera.id);
 
+	shader_uniforms uniforms;
+	shader_data_key last_sd_key;
+	last_sd_key.id = -1;
+	mesh_data_key last_md_key;
+	last_md_key.id = -1;
+	texture_data_key last_td_key;
+	last_td_key.id = -1;
+
 	for(int i = 0; i < render_batches_pa.count; i++) {
 		//TODO: check if still the same key if necessary
 		render_batch *rb = packed_array_get_sorted(&render_batches_pa, i);
 
-		shader_uniforms uniforms;
+		if(last_sd_key.id != rb->sd_key.id || last_sd_key.gen != rb->sd_key.gen) {
+			ASSERT(!shader_data_use(rb->sd_key, &uniforms), "shader data use error\n");
+			last_sd_key = rb->sd_key;
 
-		ASSERT(!shader_data_use(rb->sd_key, &uniforms), "shader data use error\n");
+			glUniformMatrix4fv(uniforms.projection_loc, 1, GL_TRUE, (GLfloat*)&wd->projection_m);
+			glUniformMatrix4fv(uniforms.view_loc, 1, GL_TRUE, (GLfloat*)&c->m);
+			glUniform1i(uniforms.texture_loc, 0);
+		}
 
-		glUniformMatrix4fv(uniforms.projection_loc, 1, GL_TRUE, (GLfloat*)&wd->projection_m);
-		glUniformMatrix4fv(uniforms.view_loc, 1, GL_TRUE, (GLfloat*)&c->m);
+        if(last_md_key.id != rb->md_key.id || last_md_key.gen != rb->md_key.gen) {
+            ASSERT(!mesh_data_use(rb->md_key), "mesh data use error\n");
+            last_md_key = rb->md_key;
+        }
 
-		ASSERT(!mesh_data_use(rb->md_key), "mesh data use error\n");
-
-		ASSERT(!texture_data_use(rb->td_key), "texture data use error\n");
-
-		glUniform1i(uniforms.texture_loc, 0);
+        if(last_td_key.id != rb->td_key.id || last_td_key.gen != rb->td_key.gen) {
+            ASSERT(!texture_data_use(rb->td_key), "texture data use error\n");
+            last_td_key = rb->td_key;
+        }
 
 		for(int j = 0; j < rb->entities_pa.count; j++) {
 			entity *e = rb->entities + j;
 			ASSERT(e->id != -1, "mesh data id is -1\n");
 
 			transform *t = 0;
+			ASSERT(!transform_component_get(e, &t), "transform not found for id [%d]\n", e->id);
+
+			//NOTE: can be removed, keep for now, just in case to catch weird system errors
 			texture *tex = 0;
 			mesh *m = 0;
-			ASSERT(!transform_component_get(e, &t), "transform not found for id [%d]\n", e->id);
 			ASSERT(!mesh_component_get(e, &m), "mesh not found for id [%d]\n", e->id);
 			ASSERT(!texture_component_get(e, &tex), "texture not found for id [%d]\n", e->id);
+			// ----
 
 			glUniformMatrix4fv(uniforms.transform_loc, 1, GL_TRUE, (GLfloat*)&t->m);
-
 			ASSERT(!mesh_data_draw(rb->md_key), "mesh data draw error\n");
 		}
 	}

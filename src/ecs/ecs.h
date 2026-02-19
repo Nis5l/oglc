@@ -13,5 +13,6 @@ typedef struct entity {
 void entities_init();
 int entity_create(entity *e);
 int entity_delete(const entity *e);
+int entity_teardown();
 
 #endif

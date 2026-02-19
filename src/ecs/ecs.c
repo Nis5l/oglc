@@ -57,3 +57,12 @@ int entity_delete(const entity *e) {
 	}
 	return 0;
 }
+
+int entity_teardown() {
+	int err = 0;
+	for(int i = 0; i < ENTITY_LIMIT; i++) {
+		if(entities[i].id == -1) break;
+		err += entity_delete(entities + i);
+	}
+	return err;
+}
