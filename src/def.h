@@ -32,4 +32,10 @@ typedef uint8_t  u8;
 typedef float  f32;
 typedef double f64;
 
+//NOTE: has to be here to avoid circular dependency
+typedef struct mesh_data_key {
+    int id;
+    uint gen;
+} mesh_data_key;
+
 #endif

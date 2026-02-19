@@ -1,5 +1,6 @@
-#include "mesh.h"
-#include "component/component.h"
+#include "./mesh.h"
+#include "./shader.h"
+#include "./component/component.h"
 #include "../../render/mesh_data.h"
 #include "../../render/render_batch.h"
 
@@ -12,16 +13,24 @@ void mesh_components_init() {
 }
 
 int mesh_component_get(const entity *e, mesh **m_ret) {
-    ASSERT(e, "entity is null");
+    ASSERT(e, "entity is null\n");
     ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
-    ASSERT(m_ret, "m_ret is null");
+    ASSERT(m_ret, "m_ret is null\n");
 
     return component_get(&mesh_pa, e, (void**)m_ret);
 }
 
 int mesh_component_add(const entity *e, mesh_data_key md_key) {
-    ASSERT(e, "entity is null");
+    ASSERT(e, "entity is null\n");
     ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
+
+	shader *s;
+	if(!shader_component_get(e, &s)) {
+		if(!mesh_data_is_shader_data(md_key, s->sd_key)) {
+			eprintf("mesh component shader data does not match shader component shader data\n");
+			return 1;
+		}
+	}
 
     if(component_add(&mesh_pa, e)) {
         eprintf("adding mesh failed\n");
@@ -41,7 +50,7 @@ int mesh_component_add(const entity *e, mesh_data_key md_key) {
 }
 
 int mesh_component_remove(const entity *e) {
-    ASSERT(e, "entity is null");
+    ASSERT(e, "entity is null\n");
     ASSERT(e->id >= 0 && e->id < ENTITY_LIMIT, "id [%d] not in range(0,%d)\n", e->id, ENTITY_LIMIT);
 
     mesh *m;

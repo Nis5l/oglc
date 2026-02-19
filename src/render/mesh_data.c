@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include <string.h>
 #include <glad/glad.h>
 
 #include "./mesh_data.h"
+#include "./shader_data.h"
 #include "../ecs/components/mesh.h"
 #include "../gen.h"
 
@@ -10,98 +10,16 @@ packed_array mesh_datas_pa;
 mesh_data mesh_datas[MESH_DATA_LIMIT] = {0};
 int mesh_data_map[MESH_DATA_LIMIT] = {0};
 
-uint shaderProgram;
-uint VAO;
-
 void mesh_data_init() {
-    glGenVertexArrays(1, &VAO);
-
     packed_array_init(&mesh_datas_pa, mesh_datas, sizeof(mesh_data), MESH_DATA_LIMIT, mesh_data_map, 0, 0);
 
     for(int i = 0; i < mesh_datas_pa.capacity; i++) {
         mesh_data *md = &mesh_datas[i];
         packed_array_init(&md->entities_pa, md->entities, sizeof(entity), MESH_DATA_ENTITY_LIMIT, md->entity_map, 0, 0);
     }
-
-	//shader vertex
-	unsigned int vertexShader;
-	{
-		const char *vertexShaderSource = "#version 330 core\n"
-			"layout (location = 0) in vec3 aPos;\n"
-			"layout (location = 1) in vec2 aUV;\n"
-			"out vec2 TexCoord;\n"
-			"uniform mat4 view;\n"
-			"uniform mat4 transform;\n"
-			"uniform mat4 projection;\n"
-			"void main()\n"
-			"{\n"
-			"   gl_Position = projection * view * transform * vec4(aPos, 1.0);\n"
-			"	TexCoord = aUV;\n"
-			//"   gl_Position = projection * transform * vec4(aPos, 1.0);\n"
-			//"   gl_Position = transform * vec4(aPos, 1.0);\n"
-			//"   gl_Position = vec4(aPos, 1.0);\n"
-			"}\0";
-
-		vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
-		glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-		glCompileShader(vertexShader);
-
-		int success;
-		char infoLog[512];
-		glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-		if(!success) {
-			glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-			eprintf("creating vertex shader failed [%s]\n", infoLog);
-		}
-	}
-
-	//shader fragment
-	unsigned int fragmentShader;
-	{
-		const char *fragmentShaderSource = "#version 330 core\n"
-			"out vec4 FragColor;\n"
-			"in vec2 TexCoord;\n"
-			"uniform sampler2D uTexture;\n"
-			"void main()\n"
-			"{\n"
-			//"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f); // RGB color\n"
-			"	FragColor = texture(uTexture, TexCoord);\n"
-			"}\0";
-		fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-		glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-		glCompileShader(fragmentShader);
-
-		int  success;
-		char infoLog[512];
-		glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-		if(!success) {
-			glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-			eprintf("creating fragment shader failed [%s]\n", infoLog);
-		}
-	}
-
-	{
-		shaderProgram = glCreateProgram();
-		dprintf("create shaderProgram [%d]\n", shaderProgram);
-		glAttachShader(shaderProgram, vertexShader);
-		glAttachShader(shaderProgram, fragmentShader);
-		glLinkProgram(shaderProgram);
-
-		int success;
-		char infoLog[512];
-		glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-		if(!success) {
-			glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-			eprintf("creating shader program failed [%s]\n", infoLog);
-		}
-	}
-	//uglUseProgram(shaderProgram);
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
 }
 
-int mesh_data_add(const f32 *vertices, uint vertex_count, mesh_data_key *md_key) {
+int mesh_data_add(const f32 *vertices, uint vertex_count, shader_data_key sd_key, mesh_data_key *md_key) {
 	ASSERT(vertices, "vertices is null\n");
 	ASSERT(vertex_count > 0, "vertiex count <= 0\n");
 
@@ -110,17 +28,28 @@ int mesh_data_add(const f32 *vertices, uint vertex_count, mesh_data_key *md_key)
         return 1;
     }
 
+	if(shader_data_bind_vertex_array(sd_key)) return 2;
+
 	mesh_data *md = packed_array_add(&mesh_datas_pa, mesh_datas_pa.count, gen_counter++);
     if(!md) {
         eprintf("mesh data packed array add failed\n");
-        return 2;
+        return 3;
     }
+
+	if(shader_data_register_mesh_data(sd_key, md->key)) {
+        eprintf("registering mesh data in shader data failed\n");
+		if(packed_array_remove(&mesh_datas_pa, md->key.id, md->key.gen)) {
+			eprintf("removing mesh data from packed array failed\n");
+			return 4;
+		}
+		return 5;
+	}
 
 	packed_array_init(&md->entities_pa, md->entities, sizeof(entity), MESH_DATA_ENTITY_LIMIT, md->entity_map, 0, 0);
 	md->vertex_count = vertex_count;
     glGenBuffers(1, &md->VBO);
 
-	glBindVertexArray(VAO);
+	md->sd_key = sd_key;
 
 	glBindBuffer(GL_ARRAY_BUFFER, md->VBO);
 	glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(f32) * 5 /*x y z u v*/, vertices, GL_STATIC_DRAW);
@@ -172,6 +101,15 @@ int mesh_data_remove(mesh_data_key key) {
         return 1;
     }
 
+	if(shader_data_unregister_mesh_data(md->sd_key, md->key)) {
+        eprintf("unregistering mesh data in shader data failed\n");
+		if(packed_array_remove(&mesh_datas_pa, md->key.id, md->key.gen)) {
+			eprintf("removing mesh data from packed array failed\n");
+			return 2;
+		}
+		return 3;
+	}
+
     glDeleteBuffers(1, &md->VBO);
 
     int err = 0;
@@ -222,19 +160,28 @@ int mesh_data_unregister_entity(mesh_data_key key, const entity *e) {
         return 1;
     }
 
-    if(!packed_array_remove(&md->entities_pa, e->id, e->gen)) {
-        dprintf("unregistered entity [id:%d gen:%d] from mesh_data [id:%d gen:%d]\n", e->id, e->gen, md->key.id, md->key.gen);
-        return 0;
-    } else {
+    if(packed_array_remove(&md->entities_pa, e->id, e->gen)) {
         eprintf("entity [id:%d gen:%d] not found in mesh_data [id:%d gen:%d]\n", e->id, e->gen, md->key.id, md->key.gen);
-        return 1;
+        return 2;
     }
+
+	dprintf("unregistered entity [id:%d gen:%d] from mesh_data [id:%d gen:%d]\n", e->id, e->gen, md->key.id, md->key.gen);
+	return 0;
+}
+
+int mesh_data_is_shader_data(mesh_data_key key, shader_data_key sd_key) {
+    ASSERT(key.id >= 0 && key.id < MESH_DATA_LIMIT, "mesh_data id [%d] out of range\n", key.id);
+
+    mesh_data *md = packed_array_get(&mesh_datas_pa, key.id, key.gen);
+    if(!md) {
+        eprintf("mesh_data not found [id:%d gen:%d]\n", key.id, key.gen);
+        return 0;
+    }
+
+	return md->sd_key.id == sd_key.id && md->sd_key.gen == sd_key.gen;
 }
 
 int mesh_data_teardown() {
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteProgram(shaderProgram);
-
     int err = 0;
 
     while(mesh_datas_pa.count > 0) err += mesh_data_remove(mesh_datas[mesh_datas_pa.count - 1].key);

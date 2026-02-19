@@ -14,8 +14,9 @@
 #include "./ecs/components/mesh.h"
 #include "./ecs/components/camera.h"
 #include "./ecs/components/texture.h"
+#include "./ecs/components/shader.h"
 
-int create_test_entity(entity *e, mesh_data_key md_key, texture_data_key td_key) {
+int create_test_entity(entity *e, shader_data_key sd_key, mesh_data_key md_key, texture_data_key td_key) {
 	dprintf("creating test entity...\n");
 	if(entity_create(e)) {
 		eprintf("error creating entity\n");
@@ -41,6 +42,11 @@ int create_test_entity(entity *e, mesh_data_key md_key, texture_data_key td_key)
 	t->scale.z = 100;
 	t->scale.w = 1;
 
+	dprintf("create entity: creating shader component\n");
+	if(shader_component_add(e, sd_key)) {
+		eprintf("error adding shader component\n");
+		return 1;
+	}
 
 	dprintf("create entity: creating mesh component\n");
 	if(mesh_component_add(e, md_key)) {
@@ -74,6 +80,8 @@ int main() {
 
 	dprintf("initializing ecs\n");
 	entities_init();
+	dprintf("initializing shader_data\n");
+	shader_data_init();
 	dprintf("initializing mesh_data\n");
 	mesh_data_init();
 	dprintf("initializing texture_data\n");
@@ -88,10 +96,25 @@ int main() {
 	camera_components_init();
 	dprintf("initializing texture components\n");
 	texture_components_init();
+	dprintf("initializing shader components\n");
+	shader_components_init();
+
+	shader_data_key default_shader_key;
+	dprintf("creating default shader\n");
+	if(shader_data_add("./src/shaders/default.vs", "./src/shaders/default.fs", &default_shader_key)) {
+		eprintf("error creating mesh_data\n");
+		return 1;
+	}
+
+	shader_data_key wave_test_shader_key;
+	dprintf("creating wave test shader\n");
+	if(shader_data_add("./src/shaders/wave_test.vs", "./src/shaders/wave_test.fs", &wave_test_shader_key)) {
+		eprintf("error creating mesh_data\n");
+		return 1;
+	}
 
 	mesh_data_key square_mesh_key;
 	dprintf("creating square mesh_data\n");
-
 	f32 vertices[] = {
 	//   x    y     z     u     v
 		-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
@@ -102,7 +125,14 @@ int main() {
 		 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
 		-1.0f,  1.0f, 0.0f, 0.0f, 1.0f
 	};
-	if(mesh_data_add(vertices, 6, &square_mesh_key)) {
+	if(mesh_data_add(vertices, 6, default_shader_key, &square_mesh_key)) {
+		eprintf("error creating mesh_data\n");
+		return 1;
+	}
+
+	mesh_data_key square_mesh_wave_key;
+	dprintf("creating square wave mesh_data\n");
+	if(mesh_data_add(vertices, 6, wave_test_shader_key, &square_mesh_wave_key)) {
 		eprintf("error creating mesh_data\n");
 		return 1;
 	}
@@ -120,16 +150,16 @@ int main() {
 	}
 
 	entity e1, mouse_cursor_entity, player_entity;
-	if(create_test_entity(&e1, square_mesh_key, box_tex_key)) {
+	if(create_test_entity(&e1, wave_test_shader_key, square_mesh_wave_key, box_tex_key)) {
 		eprintf("error creating test entity\n");
 		return 1;
 	}
 
-	if(create_test_entity(&mouse_cursor_entity, square_mesh_key, ball_tex_key)) {
+	if(create_test_entity(&mouse_cursor_entity, default_shader_key, square_mesh_key, ball_tex_key)) {
 		eprintf("error creating mouse cursor entity\n");
 		return 1;
 	}
-	if(create_test_entity(&player_entity, square_mesh_key, ball_tex_key)) {
+	if(create_test_entity(&player_entity, default_shader_key, square_mesh_key, ball_tex_key)) {
 		eprintf("error creating player entity\n");
 		return 1;
 	}
@@ -206,7 +236,7 @@ int main() {
 		if(input_is_key_pressed(&window.data->input, GLFW_KEY_SPACE)) {
 			for(int i = 0; i < balls_limit; i++) {
 				if(balls[i].id == -1) {
-					if(create_test_entity(balls + i, square_mesh_key, ball_tex_key)) {
+					if(create_test_entity(balls + i, default_shader_key, square_mesh_key, ball_tex_key)) {
 						eprintf("error creating test entity\n");
 						return 1;
 					}
@@ -251,7 +281,9 @@ int main() {
 
 
 	//TODO: entity teardown
-	
+	dprintf("tearing down shader_data\n");
+	shader_data_teardown();
+
 	dprintf("tearing down mesh_data\n");
 	mesh_data_teardown();
 

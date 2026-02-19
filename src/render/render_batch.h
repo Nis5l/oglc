@@ -5,6 +5,7 @@
 #include "../ecs/ecs.h"
 #include "./mesh_data.h"
 #include "./texture_data.h"
+#include "./shader_data.h"
 #include "../window.h"
 
 #define RENDER_BATCH_LIMIT ENTITY_LIMIT
@@ -18,6 +19,7 @@ typedef struct render_batch_key {
 typedef struct render_batch {
 	render_batch_key key;
 	
+	shader_data_key sd_key;
 	mesh_data_key md_key;
 	texture_data_key td_key;
 

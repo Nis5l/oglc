@@ -3,6 +3,7 @@
 #include "./components/transform.h"
 #include "./components/mesh.h"
 #include "./components/camera.h"
+#include "./components/shader.h"
 #include "../gen.h"
 
 entity entities[ENTITY_LIMIT];
@@ -45,6 +46,7 @@ int entity_delete(const entity *e) {
 	component_delete_err += mesh_component_remove(e);
 	component_delete_err += camera_component_remove(e);
 	component_delete_err += texture_component_remove(e);
+	component_delete_err += shader_component_remove(e);
 
 	entities[e->id].id = -1;
 	entities[e->id].gen = 0;
